@@ -1,0 +1,1 @@
+export const API_URL = "https://localhost:44372/swagger/index.html/api"
