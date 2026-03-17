@@ -43,6 +43,7 @@ yarn-error.*
 # dependencies
 node_modules/
 
+android/app/
 # Expo
 .expo/
 dist/

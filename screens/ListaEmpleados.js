@@ -1,331 +1,284 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import * as services from '../services/services';
-import { useNavigation } from '@react-navigation/native';
-import { SurcosContext } from '../Contexts/SurcosContext';
-import { Dimensions } from 'react-native';
-import { obtenerReporteActividades } from '../services/services';
-const screenWidth = Dimensions.get("window").width;
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { getRealmInstance } from "../realm";
+import { Ionicons } from "@expo/vector-icons";
+import CustomModal from "../src/components/Modal/MotalComponent";
+import ModalBuscarEmpleado from "../src/components/Modal/ModalBuscarEmpleado";
+import ListaEmpleadosAgregados from "../src/components/Listas/ListaEmpleadosAgregados";
+import ModalAgregarAvance from "../src/components/Modal/ModalAgregarAvance";
+import ModalSurcos from "../src/components/Modal/ModalSurcos";
 
-
-
+import { useNavigation } from "@react-navigation/native";
 const ListaEmpleados = ({ route }) => {
+  const [realmInstance, setRealmInstance] = useState(null);
 
-    const { codJefNave, CodigoTemporada } = useContext(SurcosContext)
-    const [lista, setLista] = useState([]);
-    const [listaActividades, setListaActividades] = ([]);
-    const [codigoEmpleado, setcodigoEmpleado] = useState("")
+  const [modales, setModales] = useState({
+    modalNave: false,
+    modalEmpleados: false,
+    modalActividades: false,
+    mainModal: false,
+    modalTablas: false,
+    modalActiviadesEmpleado: false,
+    modalAvance: false,
+    modalSurcos: false
+  });
 
-    const [loading, setLoading] = useState(false)
+  const [datosNave, setDatosNave] = useState({
+    codNave: "",
+    descripcionNave: ""
+  });
 
-    const navigation = useNavigation()
+  const [datosLote, setDatosLote] = useState({
+    codLote: "",
+    descripcionLote: ""
+  });
 
-    const {
-        opcion,
-        codigoLote,
-        codigoNave,
-        codigoTabla,
-        codigoTemporada,
-        codigoActividad,
-        codigoAvance,
-        descripcionLote,
-        descripcionNave,
-        tablaLabel,
-        fechaInicio,
-        fechaFin,
-        codigoJefeNave,
-        CantidadActividades,
-        nombre,
-        listaReporteEmpleados,
-        fecha,
+  const [datosTabla, setDatosTabla] = useState({
+    codTabla: "",
+    descripcionTabla: ""
+  });
 
+  const [datosActividad, setDatosActividad] = useState({});
 
+  const [ListaEmpleadosEnRealm, setListaDeEmpleadosEnRealm] = useState([]);
 
-    } = route.params || {};
+  const [datosEmpleadoNuevo, setDatosEmpleadoNuevo] = useState({
+    CodigoEmpleado: "",
+    Nombre: "",
+    CodigoTemporada: "",
+    CodigoLote: "",
+    CodigoNave: "",
+    CodTabla: "",
+    CodigoActividad: "",
+    CodigoAvance: "",
+    FechaCaptura: null,
+    horaInicioActividad: null,
+    horaFinalActividad: null,
+    limiteMaximoDeCaptura: null,
+    tienePermiso: true,
+    solicitoPermiso: false,
+    Avances: 0,
+    rendimientoApli: 0,
+    codUnidad: "",
+    CodigoJefe: "",
+    surcos: [],
+    tieneSurcos: false,
+    estado: 0
+  });
+  //console.log("datos", JSON.stringify(datosEmpleadoNuevo, null, 2));
+  const [datosEmpleadoSeleccionado, setDatosEmpleadoSeleccionado] = useState(
+    {}
+  );
 
-    // console.log(nombre, "22222222222222222222222222")
+  const navigation = useNavigation();
 
-
-    useEffect(() => {
-        if (listaReporteEmpleados) {
-            setLoading(true)
-            setTimeout(() => {
-                setLoading(false);
-            }, 1000);
-
-            setLista(listaReporteEmpleados);
-
-        }
-
-    }, [listaReporteEmpleados]);
-
-
-
-    useEffect(() => {
-        // setLoading(true);
-        //  console.log("listaReporteEmpleados recibida:", listaReporteEmpleados);
-
-    }, []);
-
-
-    const cargarListaActividades = async (CodEmpleado, Nombre) => {
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-        }, 1000);
-
-        try {
-            //console.log('wwwwwwwwwwwww')
-            //  console.log(codigoLote, codigoNave, 27, formatearFecha3(fechaInicio), formatearFecha3(fechaFin), CodEmpleado)
-            const parametros = {
-                opcion: 2,
-                codigoLote,
-                codigoNave,
-                codigoTemporada: CodigoTemporada,
-                fechaInicio: formatearFecha3(fechaInicio),
-                fechaFin: formatearFecha3(fechaFin),
-                codigoEmpleado: CodEmpleado,
-                codigoJefeNave: codJefNave,
-                codigoTabla: parseInt(codigoTabla),
-                nombre: nombre
-            };
-
-
-
-
-            const response = await services.obtenerReporteActividades(parametros);
-
-            if (!response || !response.datos || response.datos.length === 0) {
-                Alert.alert("Información", "No hay datos disponibles para el rango de fechas seleccionado.");
-                return;
-            }
-            navigation.navigate("ReporteAct", {
-                opcion: opcion,
-                descripcionLote: codigoLote,
-                descripcionNave: descripcionNave,
-                tablaLabel: tablaLabel,
-                fechaInicio: formatearFecha3(fechaInicio),
-                fechaFin: formatearFecha3(fechaFin),
-                codigoNave: codigoNave,
-                codigoTabla: codigoTabla,
-                codigoJefeNave: codJefNave,
-                listaSurcosActividades: response.datos,
-                codigoEmpleado: CodEmpleado,
-                nombre: Nombre,
-            });
-
-        } catch (error) {
-            Alert.alert("Del Campo y Asociados", "Ocurrio un problema al cargar las activ");
-            console.error(error);
-        }
-        finally {
-            // setLoading(false);
-        }
-
-    }
-
-
-    const navegarPantallaAct = async (CodEmpleado, Nombre) => {
-        await cargarListaActividades(CodEmpleado, Nombre)
-
-    }
-
-
-
-    const formatearFecha3 = (fechaInicio) => {
-        const [dia, mes, anio] = fechaInicio.split("/");
-        return `${anio}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+  useEffect(() => {
+    const inicializarRealm = async () => {
+      setRealmInstance(await getRealmInstance());
     };
+    inicializarRealm();
+  }, []);
 
+  useEffect(
+    () => {
+      const hoy = new Date(GenerarFecha(false, true));
 
+      if (realmInstance !== null) {
+        const empleadosRealm = realmInstance
+          .objects("EmpleadoCapturado")
+          .filtered(`FechaCaptura == $0 AND FechaCaptura == $0`, hoy);
 
+        // Definimos la función que procesa los datos
+        const actualizarLista = () => {
+          try {
+            // 1. Convertimos a plano para evitar problemas de "objetos vivos" de Realm
+            const empleadosPlano = JSON.parse(JSON.stringify(empleadosRealm));
 
+            // 2. Quitamos duplicados (Aquí es donde se define empleadosUnicos)
+            const empleadosUnicos = Object.values(
+              empleadosPlano.reduce((acc, emp) => {
+                acc[emp.CodigoEmpleado] = emp; // Si el código ya existe, lo sobrescribe (pisa duplicados)
+                return acc;
+              }, {})
+            );
 
+            // 3. Guardamos en el estado
+            setListaDeEmpleadosEnRealm(empleadosUnicos);
+            console.log(
+              "Listener de Realm: Lista actualizada con",
+              empleadosUnicos.length,
+              "empleados."
+            );
+          } catch (err) {
+            console.error("Error procesando datos de Realm:", err);
+          }
+        };
 
+        // Ejecutar inmediatamente al cargar para ver los datos actuales
+        actualizarLista();
 
+        // Suscribir el listener para cambios futuros
+        empleadosRealm.addListener(actualizarLista);
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => navegarPantallaAct(item.CodigoEmpleado, item.Nombre)}>
+        return () => {
+          // Limpieza vital para evitar fugas de memoria o errores de "Object is invalidated"
+          if (empleadosRealm) {
+            empleadosRealm.removeAllListeners();
+          }
+        };
+      }
+    },
+    [realmInstance]
+  );
 
-            <View style={styles.card}>
-                <Image
-                    source={require('../assets/usuario2.png')}
-                    style={styles.icono}
-                />
-                <Text style={styles.codigo}>{item.CodigoEmpleado}</Text>
-                <Text style={styles.nombre}>{item.Nombre}</Text>
+  const obtenerHoyCeroHoras = () => {
+    const fecha = new Date();
 
+    // Seteamos: Horas, Minutos, Segundos, Milisegundos
+    fecha.setHours(0, 0, 0, 0);
 
-                <View style={styles.actividadRow}>
-                    <Text style={styles.label}>Acts. realizadas: </Text>
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{item.CantidadActividades}</Text>
-                    </View>
-                </View>
+    return fecha;
+  };
+  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
+    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
+    const ahora = new Date();
 
-            </View>
-        </TouchableOpacity >
-    );
+    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
 
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+    let horas = String(ahora.getHours()).padStart(2, "0");
 
+    const minutos = String(ahora.getMinutes()).padStart(2, "0");
+    const segundos = String(ahora.getSeconds()).padStart(2, "0");
+    let fechaFormateada = ``;
 
-    return (
+    if (SoloFecha) {
+      fechaFormateada = `${año}-${mes}-${dia}`;
+    } else {
+      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
+        ? Number(minutos) + Number(2)
+        : minutos}:${segundos}`;
+    }
+    return fechaFormateada;
+  };
+  return (
+    <View style={styles.mainContainer}>
+      <ModalBuscarEmpleado
+        visible={modales.modalEmpleados}
+        setModales={setModales}
+        setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
+      />
 
-        <View style={{ flex: 1, backgroundColor: '#f0fff0' }}>
+      <CustomModal
+        modales={modales}
+        setModales={setModales}
+        setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
+        datosEmpleadoNuevo={datosEmpleadoNuevo}
+        setDatosEmpleadoSeleccionado={setDatosEmpleadoSeleccionado}
+        datosEmpleadoSeleccionado={datosEmpleadoSeleccionado}
+        setDatosActividad={setDatosActividad}
+        datosActividad={datosActividad}
+      />
 
-            <View style={styles.headerContainer}>
-                <View style={styles.subcontainer}>
-                    <Text style={[styles.headerDetailText, styles.sharedoption]}>{codigoLote}</Text>
-                    <Text style={[styles.headerDetailText, styles.sharedoption]}>{descripcionNave}</Text>
+      <ListaEmpleadosAgregados
+        listaEmpleados={ListaEmpleadosEnRealm}
+        modales={modales}
+        setModales={setModales}
+        setDatosEmpleadoSeleccionado={setDatosEmpleadoSeleccionado}
+        setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
+      />
 
-                    <Text style={[styles.headerDetailText, styles.sharedoption]}>{tablaLabel ? ` ${tablaLabel}` : 'Cargando Tabla...'} </Text>
-                    <Text style={[styles.headerDetailText, styles.sharedoption]}>
-                        Del {fechaInicio} al {fechaFin}
-                    </Text>
-                </View>
-            </View>
+      {
+        <ModalAgregarAvance
+          modales={modales}
+          setModales={setModales}
+          datosEmpleadoSeleccionado={datosEmpleadoSeleccionado}
+          datosActividad={datosActividad}
+          setDatosActividad={setDatosActividad}
+        />
+      }
 
+      {Object.keys(datosActividad).length > 0 &&
+        datosActividad.NomCortoUnidad === "SCO" &&
+        realmInstance !== null &&
+        <ModalSurcos
+          modales={modales}
+          setModales={setModales}
+          datosActividad={datosActividad}
+          setDatosActividad={setDatosActividad}
+          datosEmpleadoSeleccionado={datosEmpleadoSeleccionado}
+          realmInstance={realmInstance}
+        />}
 
+      <TouchableOpacity
+        style={styles.botonAgregar}
+        onPress={() => {
+          setModales(prev => ({
+            ...prev,
+            modalEmpleados: true
+          }));
+        }}
+      >
+        <Ionicons name="person-add" size={35} color="white" />
+      </TouchableOpacity>
 
-            {loading ? (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="green" style={{ marginTop: 30 }} />
-                </View>
-
-            ) : (
-                lista && (
-                    <FlatList
-                        data={lista}
-                        keyExtractor={(item) => item.CodigoEmpleado.toString()}
-                        numColumns={3}
-                        horizontal={false}
-                        contentContainerStyle={styles.lista}
-                        renderItem={renderItem}
-                        showsVerticalScrollIndicator={true}
-                    />
-                )
-            )}
-        </View>
-    );
+      <View />
+    </View>
+  );
 };
 
-
-
-
+/*
+ <TouchableOpacity
+        style={styles.botonTablas}
+        onPress={() => {
+          navigation.navigate("pantallaTablaDatos");
+        }}
+      >
+        <Ionicons name="person-add" size={35} color="white" />
+      </TouchableOpacity>
+*/
 const styles = StyleSheet.create({
+  botonAgregar: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+  botonTablas: {
+    position: "absolute",
+    bottom: 0,
+    left: 50,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
 
-
-    headerContainer: {
-        backgroundColor: '#B3E0B3',
-        paddingVertical: 7,
-        paddingHorizontal: 13,
-        marginBottom: 10,
-    },
-
-    lista: {
-        justifyContent: 'flex-start',
-
-    },
-    subcontainer: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-    },
-    headerDetailText: {
-        color: '#333',
-        fontSize: 13,
-        marginVertical: 3,
-    },
-    sharedoption: {
-        fontWeight: 'bold',
-    },
-    actividadRow: {
-        flexDirection: 'colum',
-        alignItems: 'center',
-        marginTop: 8,
-    },
-
-
-    nombre: {
-        fontWeight: 'bold',
-        fontSize: 12.1,
-        color: '#666',
-        marginBottom: 10,
-        textTransform: 'capitalize',
-        textAlign: "center",
-        flexWrap: "wrap",
-        maxWidth: "90%",
-        alignSelf: "center",
-
-    },
-
-    codigo: {
-        fontWeight: 'bold',
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 3,
-        margin: 3.5
-    },
-    icono: {
-        width: 45,
-        height: 45,
-        marginTop: 1,
-        resizeMode: 'contain',
-
-    },
-
-
-    card: {
-        backgroundColor: '#fff',
-        margin: 7, // margen pequeño entre tarjetas
-        borderRadius: 10,
-        alignItems: 'center',
-        padding: 13,
-        justifyContent: 'center',
-        elevation: 7,
-        height: 180,
-        elevation: 7,
-        flex: 1,                 //  ocupa espacio proporcional
-        maxWidth: screenWidth / 3 - 12, //  máximo 3 columnas
-    },
-
-
-    badge: {
-        backgroundColor: 'green',
-        borderRadius: 7,
-        paddingHorizontal: 9,
-        paddingVertical: 2,
-        marginLeft: 4,
-        alignSelf: 'center',
-        marginTop: 4
-    },
-    badgeText: {
-        color: 'white',
-        fontSize: 9.5,
-        fontWeight: 'bold',
-    },
-
-
-    negrita: {
-        fontWeight: 'bold',
-    },
-
-    label: {
-        fontSize: 11,
-        color: '#666',
-        fontWeight: 'bold',
-        marginTop: -6
-    },
-    loadingOverlay: {
-        flex: 1, // 👈 Importante: Esto hace que ocupe todo el espacio vertical disponible
-        justifyContent: 'center', // 👈 Centra el contenido (ActivityIndicator) verticalmente
-        alignItems: 'center',    // 👈 Centra el contenido horizontalmente
-    },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#f0fff0",
+    zIndex: -2
+  }
 });
-
-
-
-
-
-
-
 export default ListaEmpleados;

@@ -23,13 +23,16 @@ import EmpleadosScreen from '../screens/EmpleadosScreen';
 import ReportesAct from '../screens/ReportesAct';
 import ListaSurcos from '../screens/ListaSurcos';
 import ListaEmpleados from '../screens/ListaEmpleados';
-
+import PantallaTablaDatos from '../screens/PantallaTablaDatos';
+import LoadingScreen from '../screens/LoadingScreen';
+import ReporteEmpleadosScreen from '../screens/ReporteEmpleadosScreen';
 const Stack = createNativeStackNavigator();
 
 const styles = StyleSheet.create({
     headerLeftButton: {
         marginLeft: 5,
         padding: 5,
+       
     },
     headerTitleText: {
         fontWeight: 'bold',
@@ -89,16 +92,20 @@ function ActividadesHeader() {
         </TouchableOpacity>
     );
 }
-function ActividadesOptions() {
-    const navigation = useNavigation();
-    const [isMenuVisible, setIsMenuVisible] = useState(false);
 
-    // Animación de rebote de escala
+
+function ActividadesOptions() {
+
+    const navigation = useNavigation();
+     const [isMenuVisible, setIsMenuVisible] = useState(false);
+
+         // Animación de rebote de escala
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
-    // Abrir modal con rebote + fade
+     // Abrir modal con rebote + fade
     const openMenu = () => {
+        
         setIsMenuVisible(true);
         Animated.parallel([
             Animated.sequence([
@@ -109,7 +116,6 @@ function ActividadesOptions() {
         ]).start();
     };
 
-
     const closeMenu = () => {
         Animated.sequence([
             Animated.timing(scaleAnim, { toValue: 1.1, duration: 100, useNativeDriver: true }),
@@ -118,13 +124,13 @@ function ActividadesOptions() {
 
     };
 
-
+    
     const navigateToInicio = () => {
         closeMenu();
         navigation.navigate('Home');
     };
 
-    const cerrarSesion = () => {
+     const cerrarSesion = () => {
         closeMenu();
         Alert.alert(
             'Cerrar Sesión',
@@ -133,7 +139,15 @@ function ActividadesOptions() {
                 { text: 'Cancelar', style: 'cancel' },
                 {
                     text: 'Cerrar Sesión',
-                    onPress: () => navigation.navigate('Login'),
+                    onPress: () => {
+                    
+                          navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Login' }],
+                          });
+                        
+
+                    },
                     style: 'destructive',
                 },
             ]
@@ -142,7 +156,7 @@ function ActividadesOptions() {
 
     return (
         <View>
-            <TouchableOpacity onPress={openMenu}>
+            <TouchableOpacity  onPress={openMenu}>
                 <Ionicons name="ellipsis-vertical" size={28} color="black" />
             </TouchableOpacity>
 
@@ -179,7 +193,9 @@ function ActividadesOptions() {
     );
 }
 
+
 function CustomBotonNaveHeaderTitle({ route }) {
+    
     const { numeroNave, nombreNave } = route.params;
     return (
         <View style={styles.headerTitleContainer}>
@@ -190,9 +206,12 @@ function CustomBotonNaveHeaderTitle({ route }) {
 
 export default function AppNavigator() {
     return (
-        <Stack.Navigator initialRouteName="Login">
+        
+        <Stack.Navigator initialRouteName="Login" screenOptions={{
+             headerStyle: { backgroundColor: '#ffffffff'},
+        }}>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio', headerShown: false }} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio', headerShown:false }} />
 
             <Stack.Screen
                 name="Reportes Realizados"
@@ -203,15 +222,47 @@ export default function AppNavigator() {
                 }}
             />
 
+                <Stack.Screen
+                name="Loading"
+                component={LoadingScreen}
+                options={{
+                    headerShown: false,
+                    headerTitleAlign: 'center',
+                    headerRight: () => <ActividadesOptions />,
+                }}
+            />
+
+            
+                <Stack.Screen
+                name="Reporte Empleados"
+                component={ReporteEmpleadosScreen}
+                options={{
+                   
+                    headerTitleAlign: 'center',
+                    headerRight: () => <ActividadesOptions />,
+                }}
+            />
+
+            <Stack.Screen
+                name="pantallaTablaDatos"
+                component={PantallaTablaDatos}
+                options={{
+                    headerTitleAlign: 'center',
+                    headerRight: () => <ActividadesOptions />,
+                }}
+
+            />
+            
             <Stack.Screen
                 name="Actividades"
                 component={Actividades}
                 options={{
                     title: 'Naves',
                     headerShown: true,
-                    headerLeft: () => <ActividadesHeader />,
+                  
                     headerTitleAlign: 'center',
                     headerRight: () => <ActividadesOptions />,
+                  
                 }}
             />
 
@@ -271,7 +322,6 @@ export default function AppNavigator() {
                 options={{
                     headerShown: true,
                     title: 'Lista de Surcos',
-                    headerLeft: () => <ActividadesHeader />,
                     headerTitleAlign: 'center',
                     headerRight: () => <ActividadesOptions />,
                 }}
@@ -282,7 +332,7 @@ export default function AppNavigator() {
                 component={ListaEmpleados}
                 options={{
                     headerShown: true,
-                    title: 'Lista de Empleados',
+                    title: 'Actividades por empleado',
                     headerTitleAlign: 'center',
                     headerRight: () => <ActividadesOptions />,
                 }}

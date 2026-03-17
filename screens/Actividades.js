@@ -1,189 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { getRealmInstance } from '../realm';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { getRealmInstance } from "../realm";
+import { tr } from "date-fns/locale";
+import { FlatList } from "react-native-gesture-handler";
+import { Dimensions } from "react-native";
 
-
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const ITEM_MARGIN = 40;
+const ITEM_WIDTH = SCREEN_WIDTH / 2 - ITEM_MARGIN * 3;
 
 export default function Actividades() {
-    const navigation = useNavigation();
-    const [naves, setNaves] = useState([]);
-    const [realmInstance, setRealmInstance] = useState(null);
-    const [loading, setLoading] = useState(false)
+  const navigation = useNavigation();
+  const [naves, setNaves] = useState([]);
+  const [realmInstance, setRealmInstance] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const inicializarRealm = async () => {
+  useEffect(() => {
+    const inicializarRealm = async () => {
+      setRealmInstance(await getRealmInstance());
+    };
+    inicializarRealm();
+  }, []);
 
-            setRealmInstance(await getRealmInstance());
-        };
-        inicializarRealm();
-    }, []);
-
-
-
-    useEffect(() => {
+  useEffect(
+    () => {
+      if (realmInstance != null) {
         const getNaves = async () => {
-
+          try {
             setLoading(true);
             setTimeout(() => {
-                setLoading(false);
+              setLoading(false);
             }, 500);
 
-            const naves = realmInstance.objects('Nave');
-            setNaves(naves);
-        }
+            const naves = realmInstance.objects("Nave");
+
+            const NavesFinales = [];
+
+            naves.forEach(nave => {
+              console.log(new Date(GenerarFecha(false, true)));
+              const empleados = realmInstance
+                .objects("EmpleadoCapturado")
+                .filtered(
+                  "CodigoLote == $0 AND CodigoNave == $1 AND FechaCaptura == $2 ",
+                  String(nave.CodigoLote),
+                  String(nave.CodigoNave),
+                  new Date(GenerarFecha(false, true))
+                );
+              const navePlana = JSON.parse(JSON.stringify(nave));
+              NavesFinales.push({
+                ...navePlana,
+                tieneEmp: empleados.length > 0
+              });
+              console.log(JSON.stringify(NavesFinales, 2, null), "sss");
+              setNaves(NavesFinales);
+            });
+          } catch (error) {
+            console.log(error);
+          }
+        };
+
         getNaves();
-    }, [realmInstance]);
+      }
+    },
+    [realmInstance]
+  );
 
+  const handleNavePress = async nave => {
+    navigation.navigate("BotonNave", {
+      numeroNave: `${nave.CodigoLote} - ${nave.DescripcionLote}`,
+      nombreNave: `${nave.CodigoNave} - ${nave.DescripcionNave}`,
+      nave: nave.CodigoNave,
+      codLote: nave.CodigoLote
+    });
+  };
 
+  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
+    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
+    const ahora = new Date();
 
+    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
 
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+    let horas = String(ahora.getHours()).padStart(2, "0");
 
-    const handleNavePress = async (nave) => {
-        navigation.navigate('BotonNave', {
-            numeroNave: `${nave.CodigoLote} - ${nave.DescripcionLote}`,
-            nombreNave: `${nave.CodigoNave} - ${nave.DescripcionNave}`, // para mostrar en la UI
-        });
+    const minutos = String(ahora.getMinutes()).padStart(2, "0");
+    const segundos = String(ahora.getSeconds()).padStart(2, "0");
+    let fechaFormateada = ``;
 
+    if (SoloFecha) {
+      fechaFormateada = `${año}-${mes}-${dia}`;
+    } else {
+      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
+        ? Number(minutos) + Number(2)
+        : minutos}:${segundos}`;
+    }
+    return fechaFormateada;
+  };
 
-    };
-
-
-
+  const renderItem = ({ item }) => {
     return (
-        <View style={styles.container}>
-
-
-            {loading ? (<View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color="#00aa00" style={{ marginTop: 30 }} />
-            </View>
-            ) : (
-                <View style={styles.grid}>
-                    {(naves || []).map((nave, index) => (
-                        <View key={index} style={styles.cardWrapper}>
-                            <TouchableOpacity
-                                style={styles.card}
-                                onPress={() => handleNavePress(nave)}
-                            >
-                                <View style={styles.iconContainer}>
-
-
-
-                                    <Image
-                                        source={require('../assets/naves.png')}
-                                        style={styles.icon}
-                                        resizeMode="contain"
-                                    />
-
-                                    {nave.tieneSurcos && (
-                                        <Image
-                                            source={require('../assets/check...png')} // 👈 Ruta de tu imagen de check
-                                            style={styles.checkIcon}
-                                        />
-                                    )}
-                                </View>
-
-
-
-
-                                <View style={styles.textContainer}>
-                                    <Text style={styles.loteTexto}>
-                                        {nave.CodigoLote} - {nave.DescripcionLote}
-                                    </Text>
-                                    <Text style={styles.naveTexto}>
-                                        {nave.CodigoNave} - {nave.DescripcionNave}
-                                    </Text>
-                                </View>
-
-
-                                <View style={styles.card}>
-                                    <Text style={styles.loteTexto}>
-                                        {nave.CodigoLote} - {nave.DescripcionLote}
-                                    </Text>
-                                    <Text style={styles.naveTexto}>
-                                        {nave.CodigoNave} - {nave.DescripcionNave}
-                                    </Text>
-                                </View>
-
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </View>
-            )
-            }
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => handleNavePress(item)}
+      >
+        {item.tieneEmp &&
+          <Image
+            source={require("../assets/check...png")}
+            style={styles.checkIcon}
+          />}
+        <View style={styles.imageContainer}>
+          <Image
+            source={require("../assets/naves.png")}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+          {item.tieneSurcos &&
+            <Image
+              source={require("../assets/check...png")} // 👈 Ruta de tu imagen de check
+              style={styles.checkIcon}
+            />}
         </View>
 
+        <Text style={styles.loteTexto}>
+          {item.CodigoLote} - {item.DescripcionLote.trim()}
+        </Text>
+
+        <Text style={styles.naveTexto}>
+          {item.CodigoNave} - {item.DescripcionNave}
+        </Text>
+      </TouchableOpacity>
     );
+  };
+  return (
+    <View style={styles.container1}>
+      <View style={styles.headerContainer}>
+        <View style={styles.subcontainer}>
+          <Text style={[styles.headerDetailText, styles.sharedoption]}>
+            {GenerarFecha()}
+          </Text>
+        </View>
+      </View>
+
+      <FlatList
+        data={naves}
+        keyExtractor={item => item.CodigoNave.toString()}
+        renderItem={renderItem}
+        numColumns={2}
+        contentContainerStyle={{}}
+        columnWrapperStyle={{
+          justifyContent: "space-between",
+          paddingHorizontal: ITEM_MARGIN
+        }}
+        showsVerticalScrollIndicator={true}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f0fff0',
-        padding: 18,
-    },
+  container1: {
+    flex: 1,
+    backgroundColor: "#f0fff0"
+  },
 
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-    cardWrapper: {
-        width: '48%', // columnas  
-        marginBottom: 25,
-    },
-    card: {
-        backgroundColor: 'white',
-        borderRadius: 15,
-        paddingHorizontal: 1,
-        paddingVertical: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 10,
-        width: '100%',
-    },
-    iconContainer: {
-        backgroundColor: '#E0F7FA',
-        borderRadius: 15,
-        padding: 19,
-    },
-    icon: {
-        width: 79,
-        height: 60,
-    },
-    textContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+  card: {
+    width: ITEM_WIDTH,
+    margin: ITEM_MARGIN,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+    elevation: 3
+  },
+  checkIcon: {
+    width: 40,
+    height: 40,
+    position: "absolute",
+    top: 6,
+    right: 1
+  },
 
-    loteTexto: {
-        fontSize: 12.5,
-        fontWeight: 'bold',
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 2,
-        marginLeft: 25, // 🔸 Esto lo empuja hacia la derecha
-    },
-    naveTexto: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-        marginTop: 2,
-        fontWeight: 'bold'
+  imageContainer: {
+    width: "100%",
+    aspectRatio: 1, // 🔥 cuadrado y responsive
+    justifyContent: "center",
+    alignItems: "center"
+  },
 
-    },
-    loadingOverlay: {
-        flex: 1, // 👈 Importante: Esto hace que ocupe todo el espacio vertical disponible
-        justifyContent: 'center', // 👈 Centra el contenido (ActivityIndicator) verticalmente
-        alignItems: 'center',    // 👈 Centra el contenido horizontalmente
-    },
-    checkIcon: {
-        width: 28.5,
-        height: 28.5,
-        position: 'absolute',
-        top: 6,
-        right: 1,
-    },
+  icon: {
+    width: "40%",
+    height: "40%"
+  },
 
+  loteTexto: {
+    fontSize: 16,
+    fontWeight: "bold",
+
+    textAlign: "center"
+  },
+
+  naveTexto: {
+    fontSize: 14,
+    color: "#555",
+    textAlign: "center"
+  },
+
+  headerDetailText: {
+    fontSize: 13.5,
+    color: "#333",
+    fontWeight: "bold"
+  },
+  subcontainer: {
+    paddingTop: 12,
+    paddingBottom: 8
+  },
+
+  headerContainer: {
+    backgroundColor: "#B3E0B3",
+    paddingTop: 17,
+    paddingBottom: 16,
+    marginBottom: 16,
+    width: "100%",
+    alignItems: "center"
+  }
 });

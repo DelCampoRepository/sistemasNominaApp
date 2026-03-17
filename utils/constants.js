@@ -1,1 +1,1 @@
-export const API_URL = "https://localhost:44372/swagger/index.html/api"
+export const API_URL = "http://delcampo.com.mx/WsActividadesAppTest/api";

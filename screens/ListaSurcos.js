@@ -1,393 +1,242 @@
-import React, { use, useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert, } from 'react-native';
-import { getRealmInstance } from '../realm';
-import * as services from '../services/services';
-import { SurcosContext } from '../Contexts/SurcosContext';
-
+import React, { use, useContext, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert
+} from "react-native";
+import { getRealmInstance } from "../realm";
+import { toDate } from "date-fns";
 
 //Funcion que pintara el surco si esta trabajado o no
 const ListaSurcos = ({ route, navigation }) => {
+  const [loading, setLoading] = useState(false);
+  const [realmInstance, setRealmInstance] = useState(null);
+  const [surcosTrabajados, setSurcostrabajado] = useState(null);
+  const {
+    CodigoLote,
+    CodigoNave,
+    CodigoActividad,
+    CodigoAvance,
+    CodTabla,
+    cantidadSurcos,
+    fechaIni,
+    fechaFin,
+    DescripcionTabla,
+    numeroNave,
+    nombreNave,
+    descripcionAct
+  } = route.params || {};
 
-    const [loading, setLoading] = useState(false);
+  const [surcosFill, setsurcosFill] = useState([]);
 
-
-    const { CodigoTemporada, navesPorUsuario, setNavesporUsuario, token } = useContext(SurcosContext);
-
-    const [surcosFill, setSurcosFill] = useState([]);
-    const {
-        opcion,
-        codigoLote,
-        codigoNave,
-        codigoTabla,
-        codigoTemporada,
-        codigoActividad,
-        descripcion,
-        codigoAvance,
-        cantidadSurcos,
-        descripcionLote,
-        descripcionNave,
-        tablaLabel,
-        fechaInicio,
-        fechaFin,
-        codigoJefeNave,
-        codigoEmpleado,
-        nombre
-
-    } = route.params || {};
-
-    //console.log(nombre, 'aaaaaaaaaaaaaaaaaa')
-
-    useEffect(() => {
-        // console.log("Parametros enviados:", parametros);
-        obtenerNavesPorUsuario();
-
-
-    }, []);
-
-    /*  useEffect(() => {
-  
-          const parametros = {
-              opcion: opcion,
-              codigoLote: codigoLote,
-              codigoNave: codigoNave,
-              codigoTemporada: codigoTemporada,
-              codigoActividad: codigoActividad,
-              codigoAvance: codigoAvance,
-              fechaInicial: fechaInicio,
-              fechaFinal: fechaFin,
-              codigoJefeNave: codigoJefeNave,
-              codigoTabla: codigoTabla,
-              codigoEmpleado: codigoEmpleado,
-              nombre: nombre
-          }
-          //console.log(parametros, "aaaaaaaaaaaaaaaaaaaaaaaaa")
-          obtenerSurcos(parametros);
-      }, [navesPorUsuario]);
-  
-  
-  */
-
-    useEffect(() => {
-        // Verifica si la lista de naves ya se cargó y tiene elementos
-        if (navesPorUsuario && navesPorUsuario.length > 0) {
-
-            // Busca la nave específica que necesitamos para CantidadSurcos
-            const naveEncontrada = navesPorUsuario.find(n => n.CodigoNave === codigoNave);
-
-            // Solo si la nave existe, llamamos a la función de carga
-            if (naveEncontrada) {
-                const parametros = {
-                    opcion: opcion,
-                    codigoLote: codigoLote,
-                    codigoNave: codigoNave,
-                    codigoTemporada: codigoTemporada,
-                    codigoActividad: codigoActividad,
-                    codigoAvance: codigoAvance,
-                    fechaInicial: fechaInicio,
-                    fechaFinal: fechaFin,
-                    codigoJefeNave: codigoJefeNave,
-                    codigoTabla: codigoTabla,
-                    codigoEmpleado: codigoEmpleado,
-                    nombre: nombre
-                };
-
-                obtenerSurcos(parametros);
-            }
-        }
-    }, [navesPorUsuario, codigoNave, codigoLote, codigoTabla, codigoEmpleado]);
-
-
-
-
-    async function obtenerSurcos(params) {
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-        }, 1000);
-
-
-        try {
-
-            const Surcos = [];
-            const response = await services.ObtenerSurcosTrabajados(params);
-
-            if (!response.datos || response.datos.length === 0) {
-                return null;
-            }
-
-            const ListaSurcosTrabajados = response.datos;
-
-            const nave = navesPorUsuario.find(nave => nave.CodigoNave === codigoNave);
-
-            if (!nave) {
-
-                console.log("PREVENCIÓN DE ERROR: Nave no encontrada al obtener surcos.");
-                setLoading(false);
-                return;
-            }
-
-
-            for (let i = 0; i < nave.CantidadSurcos; i++) {
-
-
-                if (ListaSurcosTrabajados[i] !== undefined) {
-                    Surcos.push({
-                        index: i,
-                        surco: ListaSurcosTrabajados[i].CodigoSurco.toString(),
-                        avance: ListaSurcosTrabajados[i].Avance.toString(),
-                        trabajado: true,
-                    })
-                }
-                else {
-                    Surcos.push({
-                        index: i,
-                        surco: i + 1,
-                        avance: 0,
-                        trabajado: false,
-                    })
-
-                }
-
-
-            };
-
-            setSurcosFill(Surcos);
-
-        } catch (error) {
-            Alert.alert("Del Campo y Asociados", "Ocurrio un problema al cargar los surcos.")
-            console.error(error);
-
-        }
-        finally {
-            //setLoading(false);
-        }
+  useEffect(() => {
+    const inicializarRealm = async () => {
+      setRealmInstance(await getRealmInstance());
     };
+    inicializarRealm();
+  }, []);
 
-
-
-    async function obtenerNavesPorUsuario() {
-        const response = await services.obtenerNavesPorUsuario(codigoJefeNave, CodigoTemporada, token);
-
-        if (!response.data || response.data.length === 0) {
-
-            return null;
-        }
-        //console.log("Naves por usuario:");
-        //console.log(response.data);
-        setNavesporUsuario(response.data);
-        //console.log("Naves por usuario:", navesPorUsuario);
-
-        const naveE2 = navesPorUsuario.find(nave => nave.CodigoNave === codigoNave);
-        if (naveE2) {
-            console.log("Nave E2 encontrada:", naveE2.CantidadSurcos);
-        } else {
-            console.log("Nave E2 no encontrada");
-        }
-
-
-    }
-
-    const renderItem = ({ item }) => {
-        const trabajado = Number(item.avance) === 1;
-
-        return (
-            <View style={[styles.surco, trabajado && styles.surcoTrabajado]}>
-                <Text style={styles.numero}>{item.surco}</Text>
-
-                <View style={styles.avanceBox}>
-                    <Text style={styles.avanceLabel}>A:</Text>
-                    <View style={styles.avanceValueBox}>
-                        <Text style={styles.avanceValue}>{item.avance}</Text>
-                    </View>
-                </View>
-            </View>
+  useEffect(
+    () => {
+      
+      if (realmInstance != null) {
+        const emp = realmInstance.objects("EmpleadoCapturado").filtered(
+          `   CodigoLote == $0 AND 
+              CodigoNave == $1 AND 
+              CodigoActividad == $2 AND 
+              CodigoAvance == $3 AND 
+              CodTabla == $4 AND 
+              FechaCaptura >= $5 AND
+              FechaCaptura <= $6`,
+          String(CodigoLote),
+          String(CodigoNave),
+          String(CodigoActividad),
+          String(CodigoAvance),
+          String(CodTabla),
+          new Date(fechaIni),
+          new Date(fechaFin)
         );
-    };
-    if (surcosFill.length === 0) return null;
 
+        console.log(fechaIni, fechaFin);
+       
+        const surcosTrabajados = new Set();
+        emp.forEach(empleado => {
+          if (empleado.surcos?.length) {
+            empleado.surcos.forEach(s => {
+             
+              const fechaEmpleado = empleado.FechaCaptura;
+  
+              const dentroRango = new Date(fechaEmpleado) >= new Date(fechaIni)&& new Date(fechaEmpleado) <= new Date(fechaFin);
+             
+              if(dentroRango){
+                 surcosTrabajados.add(Number(s));
+              }
+            });
+          }
+        });
 
+        const surcos = [];
+        for (let i = 1; i <= cantidadSurcos; i++) {
+          surcos.push({ numSurco: i, trabajado: surcosTrabajados.has(i) });
+        }
 
-    const capitalizar = (texto) => {
-        if (!texto) return '';
-        return texto
-            .trim()
-            .toLowerCase()
-            .split(' ')
-            .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-            .join(' ');
-    };
-    const nombreCapitalizado = capitalizar(nombre);
-    const descripcionCapitalizado = capitalizar(descripcion)
+        function soloFecha(date) {
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          ).getTime();
+        }
 
+         let cantidad = 0;
+         surcos.forEach(surco => {
+            if(surco.trabajado)
+              cantidad++;
+         });
+       
+         setSurcostrabajado(cantidad);
+        setsurcosFill(surcos);
+      }
+    },
+    [realmInstance]
+  );
 
+  useEffect(() => {}, [surcosFill]);
+
+  const renderItem = ({ item }) => {
     return (
-        <View style={styles.contenedor}>
-
-            {
-                surcosFill.length > 0 &&
-                (
-                    <View>
-
-                        <View style={styles.headerContainer}>
-                            <View style={styles.subcontainer}>
-                                <Text style={[styles.headerDetailText, styles.sharedoption]} >{codigoLote} </Text>
-                                <Text style={[styles.headerDetailText, styles.sharedoption]}>{descripcionNave}</Text>
-                                <Text style={[styles.headerDetailText, styles.sharedoption]}>{tablaLabel}</Text>
-                                <Text style={[styles.headerDetailText, styles.sharedoption]}>{codigoActividad}-{codigoAvance}  {descripcionCapitalizado} </Text>
-                                {nombre && codigoEmpleado && <Text style={[styles.headerDetailText, styles.sharedoption]}>{codigoEmpleado} - {nombreCapitalizado}</Text>}
-
-                                <Text style={[styles.headerDetailText, styles.sharedoption]}>Del {fechaInicio}  Al  {fechaFin} </Text>
-                            </View>
-                        </View>
-
-
-                        <View style={styles.contsecondary}>
-                            <View style={styles.leyenda}>
-                                <View style={styles.indicador} />
-                                <Text style={styles.leyendaTexto}>Surco Trabajado</Text>
-                            </View>
-
-
-
-
-                            <View>
-
-
-                                {loading ? (
-                                    <View style={styles.loadingOverlay}>
-                                        <ActivityIndicator size="large" color="green" />
-                                    </View>
-
-                                ) : (
-                                    <FlatList
-                                        data={surcosFill}
-                                        renderItem={renderItem}
-                                        keyExtractor={(item) => item.index.toString()}
-                                        numColumns={3}
-                                        contentContainerStyle={styles.lista}
-                                        ListEmptyComponent={() => (
-                                            <Text style={styles.emptyListText}>
-                                                No hay surcos para el rango de fechas seleccionado.
-                                            </Text>
-                                        )}
-                                    />
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                )}
-        </View>
+      <View style={[styles.surco, item.trabajado && styles.surcoTrabajado]}>
+        <Text style={styles.numero}>
+          {item.numSurco}
+        </Text>
+      </View>
     );
+  };
+
+  const formatearFecha = fecha => {
+    if (!fecha) return "";
+    const day = String(fecha.getDate()).padStart(2, "0");
+    const month = String(fecha.getMonth() + 1).padStart(2, "0");
+    const year = fecha.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
+    const ahora = new Date();
+
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+    let horas = String(ahora.getHours()).padStart(2, "0");
+
+    const minutos = String(ahora.getMinutes()).padStart(2, "0");
+    const segundos = String(ahora.getSeconds()).padStart(2, "0");
+    let fechaFormateada = ``;
+
+    if (SoloFecha) {
+      fechaFormateada = `${dia}/${mes}/${año}`;
+    } else {
+      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
+        ? Number(minutos) + Number(2)
+        : minutos}:${segundos}`;
+    }
+    return fechaFormateada;
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>
+          {CodigoLote}
+        </Text>
+        <Text style={styles.headerText}>
+          {CodigoNave} - {nombreNave}
+        </Text>
+        <Text style={styles.headerText}>
+          {descripcionAct.trim()} {CodigoActividad} - {CodigoAvance}{" "}
+        </Text>
+        <Text style={styles.headerText}>
+          {DescripcionTabla}
+        </Text>
+        <Text style={styles.headerText}>
+          {GenerarFecha()}
+        </Text>
+        <Text style={styles.headerText}>
+          Surcos totales: {cantidadSurcos}
+        </Text>
+         <Text style={styles.headerText}>
+          Surcos trabajados: {surcosTrabajados}
+        </Text>
+         <Text style={styles.headerText}>
+          Surcos restantes: {cantidadSurcos-surcosTrabajados}
+        </Text>
+      </View>
+
+      <View style={{ flex: 1, backgroundColor: "#f0fff0" }}>
+        <FlatList
+          data={surcosFill}
+          keyExtractor={item => item.numSurco.toString()}
+          numColumns={3}
+          renderItem={({ item }) =>
+            <View
+              style={[styles.surco, item.trabajado && styles.surcoTrabajado]}
+            >
+              <Text
+                style={
+                  item.trabajado ? styles.surcoTextTrabajado : styles.surcoText
+                }
+              >
+                {item.numSurco}
+              </Text>
+            </View>}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={true}
+        />
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    contenedor: {
-        flex: 1,
-        backgroundColor: '#ecf8eb',
-    },
-
-    subcontainer: {
-        paddingTop: 8,
-        paddingBottom: 8
-    },
-    contsecondary: {
-        padding: 10,
-    },
-
-    sharedoption: {
-        paddingBottom: 1
-    },
-
-    headerDetailText: {
-        fontSize: 13.5,
-        color: '#333',
-        fontWeight: 'bold',
-    },
-    headerContainer: {
-        backgroundColor: '#B3E0B3',
-        paddingHorizontal: 10,
-        paddingTop: 2,
-        paddingBottom: 8,
-        borderRadius: 5,
-
-    },
-    leyenda: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 5,
-        marginBottom: 20
-    },
-    indicador: {
-        width: 13,
-        height: 12,
-        backgroundColor: '#aee5b1',
-        borderRadius: 2,
-        marginRight: 9,
-
-    },
-    leyendaTexto: {
-        fontSize: 12.5,
-        color: '#555',
-        paddingBottom: -10,
-        fontWeight: 'bold'
-    },
-    lista: {
-        marginTop: -10,
-    },
-
-    surco: {
-        width: 95,
-        height: 55,
-        borderRadius: 10,
-        backgroundColor: '#fff',
-        margin: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 1, height: 2 },
-        elevation: 3,
-        paddingTop: 2,
-    },
-    surcoTrabajado: {
-        backgroundColor: '#b2eacb',
-    },
-    numero: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#000',
-        marginBottom: 4,
-    },
-    avanceBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-
-    },
-    avanceLabel: {
-        fontSize: 13,
-        marginRight: 6,
-        color: '#000',
-    },
-    avanceValueBox: {
-        backgroundColor: '#0b7a0b',
-        paddingHorizontal: 13,
-        paddingVertical: -3,
-        borderRadius: 4,
-
-    },
-    avanceValue: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 11.5
-    },
-    loadingOverlay: {
-        flex: 1, // 👈 Importante: Esto hace que ocupe todo el espacio vertical disponible
-        justifyContent: 'center', // 👈 Centra el contenido (ActivityIndicator) verticalmente
-        alignItems: 'center',    // 👈 Centra el contenido horizontalmente
-    },
-
+  header: {
+    backgroundColor: "#B3E0B3",
+    paddingHorizontal: 10,
+    paddingTop: 15,
+    paddingBottom: 10
+  },
+  headerText: {
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "bold",
+    padding: 2
+  },
+  listContent: {
+    padding: 8
+  },
+  surco: {
+    flex: 1, // 🔑 NECESARIO para columnas
+    margin: 5,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#ffff",
+    elevation: 3,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  surcoTrabajado: {
+    backgroundColor: "#4CAF50"
+  },
+  surcoText: {
+    fontWeight: "bold"
+  },
+  surcoTextTrabajado: {
+    fontWeight: "bold",
+    color: "white"
+  }
 });
-
-
-
-
 export default ListaSurcos;

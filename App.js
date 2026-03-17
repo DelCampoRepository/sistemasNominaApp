@@ -1,10 +1,9 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from './navigation/AppNavigator';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StatusBar } from 'react-native';
-import { Proveedor } from './Contexts/Proveedor'
-
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import AppNavigator from "./navigation/AppNavigator";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "react-native";
+import { Proveedor } from "./Contexts/Proveedor";
 
 export default function App() {
   return (
@@ -17,6 +16,5 @@ export default function App() {
         </NavigationContainer>
       </Proveedor>
     </GestureHandlerRootView>
-
   );
 }
