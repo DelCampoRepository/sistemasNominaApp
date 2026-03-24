@@ -24,7 +24,7 @@ export default function LoginScreen({ navigation }) {
 
   // Inicializamos Realm solo una vez
   useEffect(() => {
-    // deleteRealmDatabase();
+    deleteRealmDatabase();
 
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());

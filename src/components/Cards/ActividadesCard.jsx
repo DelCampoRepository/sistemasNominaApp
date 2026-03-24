@@ -76,6 +76,9 @@ export default function ActividadCard({
   };
 
   const handleOnPress = () => {
+    const semana = realmInstance.objects("Semana");
+    const userData = realmInstance.objects("UserData");
+    console.log(semana[0].CodigoTemporada);
     setDatosEmpleadoNuevo((prev) => ({
       ...prev,
       CodigoActividad: item.CodigoActividad,
@@ -87,7 +90,9 @@ export default function ActividadCard({
       horaFinalActividad: obtenerFechaFormateada(),
       limiteMaximoDeCaptura: null,
       avances: 0,
-      jornal: 0
+      jornal: 0,
+      CodigoTemporada: String(semana[0].CodigoTemporada),
+      CodigoJefe: String(userData[0].codigo)
     }));
 
     setSeleccion(true);
@@ -118,6 +123,7 @@ export default function ActividadCard({
     avances: 0,
     jornal: 0
   });
+
   useEffect(() => {}, [datosEmpleadoNuevo]);
   useEffect(() => {
     if (seleccion) {

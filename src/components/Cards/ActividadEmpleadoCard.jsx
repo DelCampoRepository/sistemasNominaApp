@@ -58,7 +58,7 @@ export default function ActividadEmpleadoCard({
     if (item.solicitoPermiso) {
       Alert.alert(
         "Del campo y asociados",
-        "Esperando aprovacion de solicitud; recuerde sincronizar para mandar el permiso!"
+        "Esperando aprobación  de solicitud; recuerde sincronizar para mandar el permiso!"
       );
       return;
     }
@@ -68,7 +68,7 @@ export default function ActividadEmpleadoCard({
     ) {
       Alert.alert(
         "Del campo y Asociados",
-        "Ya no tiene permiso para editar , el tiempo a expirado ¿Deseas solictar?",
+        "Ya no tiene permiso para editar , el tiempo ha expirado ¿Deseas solictar?",
         [
           {
             text: "Cancelar",
@@ -305,13 +305,13 @@ export default function ActividadEmpleadoCard({
           .objects("ActiviadesPorEmpleado")
           .filtered(
             `
-      codigoEmpleado == $0 AND 
-      codigoLote == $1 AND 
-      codigoNave == $2 AND 
-      codigoTabla == $3 AND 
-      fecha == $4 AND 
-      CodigoActividad == $5 AND
-      CodigoAvance == $6`,
+            codigoEmpleado == $0 AND 
+            codigoLote == $1 AND 
+            codigoNave == $2 AND 
+            codigoTabla == $3 AND 
+            fecha == $4 AND 
+            CodigoActividad == $5 AND
+            CodigoAvance == $6`,
             item.codigoEmpleado,
             item.codigoLote,
             item.codigoNave,
@@ -353,6 +353,31 @@ export default function ActividadEmpleadoCard({
           // Actualizar existente
           Object.assign(actividad, data);
         }
+        const Empleado = realmInstance.objects("EmpleadoCapturado").filtered(
+          `
+          CodigoEmpleado == $0 AND 
+          CodigoLote == $1 AND 
+          CodigoNave == $2 AND 
+          CodTabla == $3 AND 
+          FechaCaptura == $4 AND 
+          CodigoActividad == $5 AND
+          CodigoAvance == $6 
+        `,
+          item.codigoEmpleado,
+          item.codigoLote,
+          item.codigoNave,
+          item.codigoTabla,
+          item.fecha,
+          item.CodigoActividad,
+          item.CodigoAvance
+        );
+
+        if (Empleado.length == 0) return;
+
+        const emp = Empleado[0];
+        emp.solicitoPermiso = true;
+        emp.tienePermiso = false;
+
         Alert.alert(
           "Del Campo y asociados",
           "solicitud guardada, se necesita sincronizar para enviar los cambios!"

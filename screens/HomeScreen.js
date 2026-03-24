@@ -134,20 +134,19 @@ export default function HomeScreen()
             <View style={styles.containerView}>
                
                 <View style={{display:"flex",alignItems:"center", justifyContent:'center', flexDirection:'row', backgroundColor:'',width:'100%',height:"50%"}}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Actividades')} style={styles.card}>
-                        <View >
-                            <View style={styles.cardContent}>
+                    <TouchableOpacity style={styles.cardPequeño} onPress={() =>navigation.navigate('ListaEmpleados')}>
+                        <View style={styles.cardContent}>
+                     
                                 <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
-                                    <Image source={lista} resizeMode='contain'
-                                    style={{ width:"90%", height: "90%",left:10 }} />
+                                    <Image source={porEmpleado} resizeMode='contain'
+                                    style={{ width:"90%", height: "90%" }} />
                                 </View>
                                 <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
                                     <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
-                                    Captura por Activ.
+                                   Act. por empleado
                                 </Text>
                                 </View>
                             </View>
-                        </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => navigation.navigate('Reportes')} style={styles.card}>
@@ -169,20 +168,7 @@ export default function HomeScreen()
 
                   <View style={{ width:'100%',height:'50%', display:"flex",flexDirection:'row', justifyContent:'center'}}>
                      
-                      <TouchableOpacity style={styles.cardPequeño} onPress={() =>navigation.navigate('ListaEmpleados')}>
-                        <View style={styles.cardContent}>
-                     
-                                <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
-                                    <Image source={porEmpleado} resizeMode='contain'
-                                    style={{ width:"90%", height: "90%" }} />
-                                </View>
-                                <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
-                                    <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
-                                   Actividades por empleado
-                                </Text>
-                                </View>
-                            </View>
-                    </TouchableOpacity>
+                    
                       <TouchableOpacity style={styles.cardPequeño} onPress={handleSincronizar}>
                         <View style={styles.cardContent}>
                             {estadoSinc &&
@@ -211,6 +197,24 @@ export default function HomeScreen()
     );
  
 }
+
+/*
+  <TouchableOpacity onPress={() => navigation.navigate('Actividades')} style={styles.card}>
+                        <View >
+                            <View style={styles.cardContent}>
+                                <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
+                                    <Image source={lista} resizeMode='contain'
+                                    style={{ width:"90%", height: "90%",left:10 }} />
+                                </View>
+                                <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
+                                    <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
+                                    Captura por Activ.
+                                </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+ */
 
 const styles = StyleSheet.create({
     container: {

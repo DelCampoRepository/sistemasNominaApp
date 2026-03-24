@@ -2,18 +2,16 @@ import React, { useState, useEffect, use } from "react";
 import { Alert, View } from "react-native";
 import { Text, ProgressBar, ActivityIndicator } from "react-native-paper";
 import { StyleSheet } from "react-native";
-import { getRealmInstance } from "../realm";
-import * as services from "../services/services";
 import LoadingDots from "../components/LoadingDots";
-import { setQuarter } from "date-fns";
-import { se } from "date-fns/locale";
+import { getRealmInstance } from "../realm";
+import { ConsultarDatosSemanaActiva } from "../services/obtenerSemanaService";
+import * as services from "../services/services";
 export default function LoadingScreen({ navigation }) {
-  const [progressBarValue, setProgressBarValue] = useState(0.0);
   const [realmInstance, setRealmInstance] = useState(null);
-  const [StatusText, setStatusText] = useState("");
+  const [datosUsuaio, setDatosUsuario] = useState(null);
   const [semanaStatus, setSemanaStatus] = useState(false);
-  const [semanaActiva, setSemanaActiva] = useState("");
-
+  const [StatusText, setStatusText] = useState("");
+  const [progressBarValue, setProgressBarValue] = useState(0.0);
   useEffect(() => {
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
@@ -24,81 +22,64 @@ export default function LoadingScreen({ navigation }) {
   useEffect(
     () => {
       if (realmInstance && realmInstance !== null) {
-        const semana = realmInstance.objects("Semana");
-        if (semana.length > 0) {
-          setSemanaActiva(semana[0].CodigoSemana);
-          setSemanaStatus(true);
-          setStatusText("Obteniendo semana activa");
-          setProgressBarValue(0.1);
+        const result = realmInstance.objects("UserData");
+
+        if (result.lenght > 0) {
+          Alert.alert("Del Campo y Asociados", "no hay datos de usuario!");
           return;
         }
 
-        obtenerSemana();
+        setDatosUsuario(result[0]);
       }
+    },
+    [realmInstance]
+  );
 
-      async function obtenerSemana() {
-        try {
-          setStatusText("Obteniendo semana activa");
+  useEffect(
+    () => {
+      if (datosUsuaio !== null) {
+        const ObtenerSemanaActiva = async () => {
+          const datosSemana = await ConsultarDatosSemanaActiva(datosUsuaio);
 
-          //semana de consulta
-          const response = await services.obtenerSemanaActiva();
+          if (datosSemana === null) {
+            navigation.goBack();
+          }
 
-          if (!response)
-            Alert.alert(
-              "Del  Campo y Asociados",
-              "No se pudo obtener la semana activa"
-            );
-
-          //datos semana realm
           const semanaRealm = realmInstance.objects("Semana");
-          const semanaRespuesta = response.codigoSemana;
-          //si no hay semana guardada en el realm , la guardamos
 
           if (semanaRealm.length === 0) {
             realmInstance.write(() => {
               realmInstance.create(
                 "Semana",
                 {
-                  CodigoSemana: Number(response.codigoSemana),
-                  CodigoTemporada: Number(response.codigoTemporada),
-                  FechaInicial: response.fechaFinal,
-                  FechaFinal: response.fechaInicial
+                  CodigoSemana: Number(datosSemana.codigoSemana),
+                  CodigoTemporada: Number(datosSemana.codigoTemporada),
+                  FechaInicial: datosSemana.fechaFinal,
+                  FechaFinal: datosSemana.fechaInicial
                 },
                 "modified"
               );
             });
-          } else if (
-            Number(semanaRespuesta) !== Number(semanaRealm[0].CodigoSemana)
-          ) {
-            //si hay semana guardada pero no coincide con la de la peticion entonces es jueves
-            //nueva semana por lo tanto borramos la semana en nuestro realm todos los datos , despues volvemos a guardar la semana
-            borrarDatos();
-            GuardarSemanaEnRealm(response);
+
+            setSemanaStatus(true);
           } else {
-            //por defecto pues quiere decir que si hay semana guardada y que si sonn iguales por lo que seguimos en semana activas
-            console.log("rerer");
-          }
-          setStatusText("Datos de semana activa guardados");
-          setProgressBarValue(0.1);
-          setSemanaStatus(true);
-
-          realmInstance.write(() => {
-            const existe = realmInstance.objectForPrimaryKey("Sincronizar", 0);
-
-            if (!existe) {
-              realmInstance.create("Sincronizar", {
-                id: 0,
-                sincronizado: false
-              });
+            const semanaRealm = realmInstance.objects("Semana");
+            if (
+              Number(semanaRealm[0].CodigoSemana) ===
+              Number(datosSemana.codigoSemana)
+            ) {
+              setSemanaStatus(true);
+            } else {
+              borrarDatos();
+              GuardarSemanaEnRealm(response);
+              setSemanaStatus(true);
             }
-          });
-        } catch (error) {
-          Alert.alert("error", error);
-          console.log(error);
-        }
+          }
+        };
+        ObtenerSemanaActiva();
       }
     },
-    [realmInstance]
+    [datosUsuaio]
   );
 
   useEffect(
@@ -139,6 +120,31 @@ export default function LoadingScreen({ navigation }) {
     [semanaStatus]
   );
 
+  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
+    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
+    const ahora = new Date();
+
+    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
+
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+    let horas = String(ahora.getHours()).padStart(2, "0");
+
+    const minutos = String(ahora.getMinutes()).padStart(2, "0");
+    const segundos = String(ahora.getSeconds()).padStart(2, "0");
+    let fechaFormateada = ``;
+
+    if (SoloFecha) {
+      fechaFormateada = `${año}-${mes}-${dia}`;
+    } else {
+      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
+        ? Number(minutos) + Number(2)
+        : minutos}:${segundos}`;
+    }
+    return fechaFormateada;
+  };
+  
   const obtenerNavesDeUsuario = async (codigo, temporada, token) => {
     try {
       setStatusText("Obteniendo naves del usuario");
@@ -303,13 +309,6 @@ export default function LoadingScreen({ navigation }) {
         if (realmInstance.objects("Empleado") !== null)
           realmInstance.delete(realmInstance.objects("Empleado"));
       });
-      if (realmInstance !== null) {
-        async function obtenerSemana() {
-          const response = await services.obtenerSemanaActiva();
-          console.log(response);
-        }
-        obtenerSemana();
-      }
 
       realmInstance.write(() => {
         response.empleados.forEach(emp => {
@@ -336,30 +335,7 @@ export default function LoadingScreen({ navigation }) {
       Alert.alert("error", error);
     }
   };
-  /*
-  .filtered("FechaCaptura == $0", new Date(GenerarFecha(false, true))).map(emp => ({
-            CodigoEmpleado: emp.CodigoEmpleado,
-            Nombre: emp.Nombre,
-            CodigoTemporada: emp.CodigoTemporada,
-            CodigoLote: emp.CodigoLote,
-            CodigoNave: emp.CodigoNave,
-            CodTabla: emp.CodTabla,
-            CodigoActividad: emp.CodigoActividad,
-            CodigoAvance: emp.CodigoAvance,
-            FechaCaptura: emp.FechaCaptura?.toISOString(),
-            horaInicioActividad: emp.horaInicioActividad?.toISOString(),
-            horaFinalActividad: emp.horaFinalActividad?.toISOString(),
-            limiteMaximoDeCaptura: emp.limiteMaximoDeCaptura?.toISOString(),
-            tienePermiso: emp.tienePermiso,
-            solicitoPermiso: emp.solicitoPermiso,
-            Avances: emp.Avances,
-            rendimientoApli: emp.rendimientoApli,
-            codUnidad: emp.codUnidad,
-            CodigoJefe: emp.CodigoJefe,
-            surcos: [...emp.surcos],
-            tieneSurcos: emp.tieneSurcos
-  }));
-*/
+
   const EnviarEmpleadosCapturados = async token => {
     try {
       const EmpleadosAEnviar = realmInstance.objects("EmpleadoCapturado");
@@ -392,8 +368,8 @@ export default function LoadingScreen({ navigation }) {
         });
       });
 
-      const emp = realmInstance.objects("EmpleadoCapturado");
-
+      //const emp = realmInstance.objects("EmpleadoCapturado");
+      console.log(JSON.stringify(EmpleadosAEnviar, null, 2));
       const response = await services.EnviarEmpleados(EmpleadosAEnviar, token);
 
       console.log("✅Sincronización completada");
@@ -433,31 +409,6 @@ export default function LoadingScreen({ navigation }) {
         "modified"
       );
     });
-  };
-
-  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
-    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
-    const ahora = new Date();
-
-    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
-
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    let horas = String(ahora.getHours()).padStart(2, "0");
-
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-    let fechaFormateada = ``;
-
-    if (SoloFecha) {
-      fechaFormateada = `${año}-${mes}-${dia}`;
-    } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
-        ? Number(minutos) + Number(2)
-        : minutos}:${segundos}`;
-    }
-    return fechaFormateada;
   };
 
   return (

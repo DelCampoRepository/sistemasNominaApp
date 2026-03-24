@@ -23,12 +23,18 @@ export const login = async data => {
   return await response.json();
 };
 export const obtenerSemanaActiva = async () => {
+  const controller = new AbortController();
+  const timeOutId = setTimeout(() => controller.abort(), 5000);
   try {
     let realmInstance = await getRealmInstance();
     const userData = realmInstance.objects("UserData");
 
     if (!userData || userData.length === 0) {
-      throw new Error("No existe usuario almacenado en Realm");
+      Alert.alert(
+        "Error",
+        "los datos del usuario no existen en el dispositivo!"
+      );
+      return;
     }
 
     const token = userData[0].token;
@@ -38,14 +44,21 @@ export const obtenerSemanaActiva = async () => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
-      }
+      },
+      signal: controller.signal
     });
 
     const data = await response.json();
 
     return data;
   } catch (error) {
-    console.error("Error en obtenerSemanaActiva:", error);
+    if (error.name === "AbortError") {
+      console.error("La petición superó el tiempo límite");
+    } else {
+      console.error("Error en la petición:", error);
+    }
+  } finally {
+    clearTimeout(timeOutId);
     return null;
   }
 };
