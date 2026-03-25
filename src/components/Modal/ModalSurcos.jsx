@@ -98,7 +98,14 @@ export default function ModalSurcos({
         //evaluamos el estado para reasignar
         let estado = "w";
         if (totalAvance >= 1 && !miRegistro) estado = "g";
-        else if (miRegistro) estado = miRegistro.avanceAcum === 1 ? "gr" : "o";
+        else if (miRegistro)
+          estado =
+            miRegistro.avanceAcum !== 1
+              ? "o"
+              : new Date(miRegistro.fecha).getTime() !==
+                  new Date(GenerarFecha(false, true)).getTime()
+                ? "g"
+                : "gr";
         else if (totalAvance > 0) estado = "o";
 
         //creamos un objeto que representa nuestro surco
@@ -229,6 +236,7 @@ export default function ModalSurcos({
       //Alert.alert("Éxito", "Avances guardados correctamente");
       //  handleCerrarModal();
       //      console.log(obtenerFechaYHora());
+      const semana = realmInstance.objects("Semana");
 
       await realmInstance.write(() => {
         const surcosPrevios = realmInstance.objects("Surco").filtered(
@@ -237,15 +245,20 @@ export default function ModalSurcos({
              lote == $2 AND 
              codEmpleado == $3  AND 
              actividad == $4 AND 
-             avance == $5 `,
+             avance == $5  AND
+             semanaActiva == $6 AND 
+             fecha == $7`,
+
           datosActividad.codigoTabla,
           datosActividad.codigoNave,
           datosActividad.codigoLote,
           datosActividad.codigoEmpleado,
           datosActividad.CodigoActividad,
-          datosActividad.CodigoAvance
+          datosActividad.CodigoAvance,
+          String(semana[0].CodigoSemana),
+          new Date(GenerarFecha(false, true))
         );
-        console.log("previos", JSON.stringify(surcosPrevios, null, 2));
+
         realmInstance.delete(surcosPrevios);
 
         let sumat = 0;
@@ -254,7 +267,7 @@ export default function ModalSurcos({
           surcosSele.push(s.surco);
           // 1. Buscar si ya existe para actualizarlo
           sumat += s.avanceAcum;
-
+          console.log("ssss", s);
           const existe = realmInstance.objects("Surco").filtered(
             `codEmpleado == $0 AND 
               surco == $1 AND 
@@ -286,7 +299,7 @@ export default function ModalSurcos({
             codEmpleado: datosActividad.codigoEmpleado,
             avanceAcum: Number(s.avanceAcum.toFixed(2)),
             estado: s.estado,
-            fecha: obtenerHoyCeroHoras(),
+            fecha: new Date(GenerarFecha(false, true)),
             semanaActiva: String(semanaActiva),
             trabajadoTotal:
               s.avanceAcum + s.avanceTotalOtros === 1 ? true : false,

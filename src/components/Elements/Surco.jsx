@@ -22,7 +22,9 @@ export default function Surco({ item, onPressSurco, onLongPressSurco }) {
 
   return (
     <Pressable
-      onPress={() => !esGris && onPressSurco(item)}
+      onPress={() => {
+        !esGris && onPressSurco(item);
+      }}
       onLongPress={() => !esGris && onLongPressSurco(item)}
       style={[
         styles.mainContainer,

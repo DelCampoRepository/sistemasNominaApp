@@ -25,7 +25,7 @@ export default function ReporteEmpleadosScreen({ route }) {
     fechaFin
   } =
     route.params || {};
-  console.log(route.params, 'asaaaaaaaaa')
+
   useEffect(() => {
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
@@ -113,7 +113,7 @@ finDia.setHours(23, 59, 59, 999);
 
          const inicioDia = new Date(fechaIni);
               inicioDia.setHours(0, 0, 0, 0);
-
+        
         const finDia = new Date(fechaFin);
            finDia.setHours(23, 59, 59, 999);
            // console.log(fechaFin, fechaIni)
@@ -128,7 +128,7 @@ finDia.setHours(23, 59, 59, 999);
           inicioDia,
           finDia
         )
-          console.log('accccccc',listaEmpleados)
+        
           if (actividades.length > 0 && listaEmpleados.length > 0) {
         const empleadosFinal = listaEmpleados.map(emp => {
           const actividad = actividades.find(
@@ -143,7 +143,7 @@ finDia.setHours(23, 59, 59, 999);
                 RendimientoTope: actividad?.RendimientoTope ?? 0,
           }
         });
-         //  console.log(empleadosFinal);
+        
          setActividadesPorEmp(empleadosFinal)
       setIsMenuVisible(true);
     }
@@ -175,7 +175,7 @@ const renderIntem = ({ item }) => (
       borderRadius: 12.5,
       marginHorizontal: 2, 
       marginVertical: 2,
-      elevation: 1,
+    
       borderWidth: 0.01
     }}
   >
@@ -231,8 +231,9 @@ const renderIntem = ({ item }) => (
                   flexDirection: "row",
                   borderWidth: 0.5,
                   borderRadius: 10,
-                  elevation: 5,
-                  width: "94%"
+                  elevation:isMenuVisible?0: 5,
+                  width: "94%",
+                  
                 }}
                 onPress={ ()=> buscarActividadesEmpleado(empleado)}
               >
@@ -280,6 +281,7 @@ const renderIntem = ({ item }) => (
       <Modal visible={isMenuVisible}>
         <View style={{
            width:'100%',
+          
                         height:'100%',
             backgroundColor: "#00000099",
             justifyContent: "center",  

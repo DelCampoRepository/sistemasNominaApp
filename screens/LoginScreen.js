@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert
 } from "react-native";
-
+import { Ionicons } from "@expo/vector-icons";
 import { TextInput } from "react-native-paper";
 import logo from "../assets/logo.png";
 import * as services from "../services/services";
@@ -24,8 +24,12 @@ export default function LoginScreen({ navigation }) {
 
   // Inicializamos Realm solo una vez
   useEffect(() => {
-    deleteRealmDatabase();
-
+    //deleteRealmDatabase();
+    //borrar_token();
+    async function borrar_token() {
+      await AsyncStorage.removeItem("TOKEN");
+      console.log("token borrado");
+    }
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
     };
@@ -45,7 +49,7 @@ export default function LoginScreen({ navigation }) {
 
       //si existe token
 
-      if (token == null) {
+      if (token !== null) {
         //si existe fecha de expiracion
         if (fechaExpiracionToken) {
           const soloFecha = fechaExpiracionToken.split("T")[0];
@@ -56,7 +60,7 @@ export default function LoginScreen({ navigation }) {
           const expirado = limiteLocal >= ahora;
 
           //si el token aun no expira
-          if (expirado) {
+          if (!expirado) {
             //nos dirigimos a home
             navigation.replace("Home");
             return;
@@ -74,7 +78,7 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      await AsyncStorage.setItem("TOKEN", response.token);
+      //await AsyncStorage.setItem("TOKEN", response.token);
       await guardarToken(response.tokenExpira);
 
       if (realmInstance !== null) {
@@ -162,6 +166,14 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.loginButtonText}>INICIAR SESION</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={styles.botonTablas}
+        onPress={() => {
+          navigation.navigate("pantallaTablaDatos");
+        }}
+      >
+        <Ionicons name="person-add" size={35} color="white" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -229,6 +241,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 25
   },
+  botonTablas: {
+    position: "absolute",
+    bottom: 0,
+    left: 50,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+
   loginButtonText: {
     color: "white",
     fontWeight: "bold"

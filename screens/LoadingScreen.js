@@ -89,32 +89,36 @@ export default function LoadingScreen({ navigation }) {
       }
 
       async function sincronizar() {
-        const userData = await realmInstance.objects("UserData");
-        const semana = await realmInstance.objects("Semana");
+        try {
+          const userData = await realmInstance.objects("UserData");
+          const semana = await realmInstance.objects("Semana");
 
-        await obtenerNavesDeUsuario(
-          userData[0].codigo,
-          semana[0].CodigoTemporada,
-          userData[0].token
-        );
+          await obtenerNavesDeUsuario(
+            userData[0].codigo,
+            semana[0].CodigoTemporada,
+            userData[0].token
+          );
 
-        await obtenerTablasDeUsuario(
-          userData[0].codigo,
-          semana[0].CodigoTemporada,
-          userData[0].token
-        );
+          await obtenerTablasDeUsuario(
+            userData[0].codigo,
+            semana[0].CodigoTemporada,
+            userData[0].token
+          );
 
-        await obtenerActividades(
-          userData[0].codigo,
-          semana[0].CodigoTemporada,
-          userData[0].token
-        );
+          await obtenerActividades(
+            userData[0].codigo,
+            semana[0].CodigoTemporada,
+            userData[0].token
+          );
 
-        await obtenerEmpleados(semana[0].CodigoTemporada, userData[0].token);
+          await obtenerEmpleados(semana[0].CodigoTemporada, userData[0].token);
 
-        await EnviarEmpleadosCapturados(userData[0].token);
+          await EnviarEmpleadosCapturados(userData[0].token);
 
-        navigation.replace("Home");
+          navigation.replace("Home");
+        } catch (error) {
+          Alert.alert("Error", `${error}`);
+        }
       }
     },
     [semanaStatus]
@@ -144,7 +148,7 @@ export default function LoadingScreen({ navigation }) {
     }
     return fechaFormateada;
   };
-  
+
   const obtenerNavesDeUsuario = async (codigo, temporada, token) => {
     try {
       setStatusText("Obteniendo naves del usuario");
@@ -369,9 +373,36 @@ export default function LoadingScreen({ navigation }) {
       });
 
       //const emp = realmInstance.objects("EmpleadoCapturado");
-      console.log(JSON.stringify(EmpleadosAEnviar, null, 2));
+
       const response = await services.EnviarEmpleados(EmpleadosAEnviar, token);
 
+      realmInstance.write(() => {
+        response.forEach(empResp => {
+          const empleado = realmInstance.objects("EmpleadoCapturado").filtered(
+            `CodigoEmpleado == $0 AND
+            CodigoLote == $1 AND
+            CodigoNave == $2 AND
+            CodTabla == $3 AND
+            CodigoActividad == $4 AND
+            CodigoAvance == $5 AND
+            FechaCaptura == $6`,
+            empResp.codigoEmpleado,
+            empResp.codigoLote,
+            empResp.codigoNave,
+            empResp.codTabla,
+            empResp.codigoActividad,
+            empResp.codigoAvance,
+            new Date(empResp.fechaCaptura)
+          )[0];
+
+          if (empleado) {
+            // actualizar campos
+            Object.assign(empleado, {
+              estado: empResp.estado
+            });
+          }
+        });
+      });
       console.log("✅Sincronización completada");
       Alert.alert("Del Campo y Asociados", "Sincronización completa");
       //console.log(JSON.stringify(listaEmpleados, null, 2));
@@ -390,8 +421,10 @@ export default function LoadingScreen({ navigation }) {
         realmInstance.delete(realmInstance.objects("Nave"));
         realmInstance.delete(realmInstance.objects("ReportesAct"));
         realmInstance.delete(realmInstance.objects("Surco"));
+        realmInstance.delete(realmInstance.objects("SurcoAvance"));
         realmInstance.delete(realmInstance.objects("Sincronizar"));
         realmInstance.delete(realmInstance.objects("Semana"));
+        realmInstance.delete(realmInstance.objects("ActiviadesPorEmpleado"));
       });
     }
   };

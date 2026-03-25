@@ -223,22 +223,12 @@ const ListaEmpleados = ({ route }) => {
       >
         <Ionicons name="person-add" size={35} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.botonTablas}
-        onPress={() => {
-          navigation.navigate("pantallaTablaDatos");
-        }}
-      >
-        <Ionicons name="person-add" size={35} color="white" />
-      </TouchableOpacity>
+
       <View />
     </View>
   );
 };
 
-/*
-
-*/
 const styles = StyleSheet.create({
   botonAgregar: {
     position: "absolute",
