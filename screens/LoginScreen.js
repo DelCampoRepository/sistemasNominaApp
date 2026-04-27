@@ -14,79 +14,177 @@ import * as services from "../services/services";
 import { deleteRealmDatabase, getRealmInstance } from "../realm";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { importarJSONaRealm } from "../utils/LeerArchivoExportado";
+import { ConsultarDatosSemanaActiva } from "../services/obtenerSemanaService";
+import ModalCargando from "../src/components/ModalSesion";
+import { exportarRealmAJSON2 } from "../utils/recuperaLocal";
+import { importarJSONaRealmManual } from "../utils/importarManual";
+
 export default function LoginScreen({ navigation }) {
+  
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [inputUser, setInputUser] = useState("jefnavdeh2");
-  const [inputPassword, setInputPassword] = useState("jndeh2");
-
-  //const [userData, setUserData] = useState(null);
+  const [inputUser, setInputUser] = useState("jefnavcos232");
+  const [inputPassword, setInputPassword] = useState("jncos232");
   const [realmInstance, setRealmInstance] = useState(null);
-
+  const [desbloquear, setDesbloquear] = useState(false);
+ 
+  const [MostraModal, setMostraModal] = useState(false);
   // Inicializamos Realm solo una vez
   useEffect(() => {
-    //deleteRealmDatabase();
-    //borrar_token();
-    async function borrar_token() {
-      await AsyncStorage.removeItem("TOKEN");
-      console.log("token borrado");
-    }
+   //deleteRealmDatabase();
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
+       // await borrar_token();  
     };
     inicializarRealm();
   }, []);
 
-  useEffect(() => {}, [realmInstance]);
+  useEffect(() => {
+//BorrarDatos()
+  }, [realmInstance]);
+async function borrar_token() {
+  await AsyncStorage.removeItem("TOKEN");
+  await AsyncStorage.removeItem("TOKEN_EXPIRA");
+}
 
-  const guardarToken = async fecha => {
-    await AsyncStorage.setItem("TOKEN_EXPIRA", fecha);
-  };
+  async function BorrarDatos() {
+  //await deleteRealmDatabase();
+  realmInstance.write(() => {
+  realmInstance.deleteAll();
+});
+   
+}
 
-  const handleLogin = async () => {
-    try {
-      const token = await AsyncStorage.getItem("TOKEN");
-      const fechaExpiracionToken = await AsyncStorage.getItem("TOKEN_EXPIRA");
+  async function HandleLogin() {
 
-      //si existe token
+       try{
+           
+        setMostraModal(true);
+            if(ValidarCredencialesIngresadas())
+            {
+               const userData = realmInstance.objects('UserData');
 
-      if (token !== null) {
-        //si existe fecha de expiracion
-        if (fechaExpiracionToken) {
-          const soloFecha = fechaExpiracionToken.split("T")[0];
+              //si el token existe
+              if( await ValidarExistenciaToken() ){
+              
+                //Si el token aun no expira
+                if(await ValidarVigenciaFechaToken() === false && userData.length > 0)
+                  {   
+                    //navegamos a home    
+                    navigation.navigate("Home");
+                     return;
+                  }
+                  else // si el token ya expiro
+                  {   
+                    //obtenemos uno nuevo
+                    const loginRes=  await Login(); 
+                    //validamos que la semana activa
+                   if(loginRes)
+                   {
+                     const res = await ValidarSemanaActiva();
+                        if(res.valido)
+                          {
+                            //si la semana activa se actualizo
+                            if(res.semanaCambio)
+                            { 
+                              //sincronizamos
+                              navigation.navigate("Loading");
+                              return;
+                            }
+                            else{//si no se actualizo vamos a home
+                              
+                              navigation.navigate("Home");
+                               return;
+                            }
+                          }else{
+                      
+                          Alert.alert("error","erro en la validacion de la semana")
+                     }
+                   }
+                    
+                  }
+          }else{ //si el token no existe en el dispositivo
+            //pedimos uno 
+           
+            const  loginRes= await Login();
+             //validamos la semana
+           if(loginRes)
+           {
+              const res = await ValidarSemanaActiva();
+              if(res.valido)
+              {
+                
+                if(res.semanaCambio){ 
+                   navigation.navigate("Loading");
+                }
+                else{                 
+                   navigation.navigate("Home");   
+                }
+              }else{
+                console.log("eee");
+              }
+           }
 
-          const [y, m, d] = soloFecha.split("-").map(Number);
-          const limiteLocal = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
-          const ahora = Date.now();
-          const expirado = limiteLocal >= ahora;
-
-          //si el token aun no expira
-          if (!expirado) {
-            //nos dirigimos a home
-            navigation.replace("Home");
-            return;
           }
-        }
-      }
+         }else
+         {
+          return;
+         }
+       }catch(error)
+       {
+        Alert.alert(`${error}`)
+       }
+       finally{
+             setMostraModal(false);
+       }
+    
+  }
 
-      const response = await services.login({
+  async function ValidarExistenciaToken(){
+    
+    const token = await AsyncStorage.getItem("TOKEN");
+    const fechaExpiracionToken = await AsyncStorage.getItem("TOKEN_EXPIRA");
+    const res = token !== null &&  fechaExpiracionToken !== null;
+    
+       return res; 
+    
+  }
+  
+  async function Login(){
+
+     const response = await services.login({
         nombreUsuario: inputUser,
         password: inputPassword
       });
-
-      if (response.estado !== 1) {
-        Alert.alert("Del Campo y Asociados", "Usuario o contraseña inválido.");
-        return;
+    
+      if (response.estado !== undefined && response.estado !== 1) {
+        
+        Alert.alert(`Del campo y asociados`,`${response.mensaje}`);
+        return false;
       }
+      else if(response.estado ===0){
+           
+          return false;
+      }else{
+         console.log('ddd')
+          await GuardarTokenEnAsyncStorage(response.token, response.tokenExpira);
+          await GuardarDatosUsuarioEnRealm(response);
+          await GuardarCredenciales({user: response.nomUsuario,pass:inputPassword});
+          return true;
+      }
+  }
 
-      //await AsyncStorage.setItem("TOKEN", response.token);
-      await guardarToken(response.tokenExpira);
+  async function GuardarTokenEnAsyncStorage(token, fechaExpiracion) {
+  await AsyncStorage.setItem("TOKEN", token);
+  await AsyncStorage.setItem("TOKEN_EXPIRA", fechaExpiracion);
+  }
 
-      if (realmInstance !== null) {
+  async function GuardarDatosUsuarioEnRealm(response) {
+    if (realmInstance !== null) {
         await realmInstance.write(() => {
           if (realmInstance.objects("UserData") !== null)
             realmInstance.delete(realmInstance.objects("UserData"));
-
-          realmInstance.create("UserData", {
+            realmInstance.create("UserData", {
             estado: response.estado,
             codigo: response.codigo,
             nomUsuario: response.nomUsuario,
@@ -97,21 +195,178 @@ export default function LoginScreen({ navigation }) {
           });
         });
       }
+  }
 
-      // setUserData(response);
-      // setToken(response.token);
-      navigation.replace("Loading");
-    } catch (error) {
-      console.error("Error en login:", error);
-      Alert.alert(
-        "Del Campo y Asociados",
-        "No se pudo establecer conexión con el servidor."
-      );
+  function ValidarCredencialesIngresadas(){
+   
+     if(inputUser.trim() === "Delcampo21"){
+      setDesbloquear(true);
+      return false;
     }
-  };
+    else if(inputUser.trim() === "Delcampo22"){
+      setDesbloquear(false);
+      return false;
+    }
+     else if(inputUser.trim() === "" || inputPassword.trim() === ""){
+      Alert.alert("Error", "Por favor ingrese usuario y contraseña");
+      return false;
+    }
+    else{
+      const credenciales= realmInstance.objects("CredencialesSchema");
+      if(credenciales.length > 0)
+      {
+         if(inputUser.toUpperCase() === credenciales[0].nomUsuario.toUpperCase()  && inputPassword === credenciales[0].password)
+         {
+          return true
+         }
+         else{
+            Alert.alert("Error", "Credenciales incorrectas!");
+          return false;
+         }
+      }
+      else{
+        return true;
+      }
+
+    }
+  }
+
+ async function ValidarVigenciaFechaToken(){
+    const fechaExpiracionToken = await AsyncStorage.getItem("TOKEN_EXPIRA");
+    const soloFecha = fechaExpiracionToken.split("T")[0];
+
+    const [y, m, d] = soloFecha.split("-").map(Number);
+    const fechaLimite = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+    const fechaActual = Date.now();
+
+    const TokenExpiro =fechaLimite  < fechaActual ;
+    console.log("expiro el token?: ",TokenExpiro);
+    return TokenExpiro;
+  }
+
+async function  GuardarCredenciales(data) {
+ try{
+    realmInstance.write(()=>{
+    realmInstance.create("CredencialesSchema",{
+        nomUsuario: data.user,
+        password: data.pass
+    },"modified");
+  })
+ }
+ catch(error)
+ {
+    console.log(error)
+ }
+}
+ async function ValidarSemanaActiva()
+  {
+    const semanaRealm = await realmInstance.objects("Semana");
+    const datosUsuarioRrealm = await realmInstance.objects("UserData"); 
+    const datosToken = await ObtenerTokenGuardado();
+    if(datosUsuarioRrealm.length > 0)
+    {
+     
+      try{
+        const RespuesApiSemana = await ConsultarDatosSemanaActiva(datosUsuarioRrealm[0].token);
+            
+            if(RespuesApiSemana === null)
+            {
+              Alert.alert("Error","La consulta para obtener la semana activa de la api  no retorno lo esperado!");
+              return { valido: false, semanaCambio: false };
+            } 
+
+            if(semanaRealm.length > 0)
+            {  
+              
+              if (compararSemanaApiVsGuardada(RespuesApiSemana, semanaRealm[0])) {
+                 
+                await GuardarSemanaActivaEnRealm(RespuesApiSemana);
+                return { valido: true, semanaCambio: true };
+              }
+              else{
+                
+                return { valido: true, semanaCambio: false };
+              }
+
+            }else{
+             
+              await GuardarSemanaActivaEnRealm(RespuesApiSemana);
+              return { valido: true, semanaCambio: true };
+            }
+         
+      }
+      catch(error){
+          Alert.alert("Error", `No se pudo conectar con el servidor.  ${error}`);
+          return { valido: false, semanaCambio: false };
+        }
+    }else{
+            Alert.alert("Error","La busqueda de la semanaActiva guardada en el dispositivo no arrojo resultados, no se puede realizar consulta de la semana si no hay token en UserDataSchema!");
+              return { valido: false, semanaCambio: false };
+           }
+
+  }
+
+  async function GuardarSemanaActivaEnRealm(datosSemana){
+    await realmInstance.write(() => {
+
+        realmInstance.delete(realmInstance.objects("Semana"));
+
+        realmInstance.create(
+        "Semana",
+        {
+          CodigoSemana: Number(datosSemana.codigoSemana),
+          CodigoTemporada: Number(datosSemana.codigoTemporada),
+          FechaInicial: datosSemana.fechaInicial,
+          FechaFinal:datosSemana.fechaFinal
+        },
+        "modified"
+      );
+    });
+  }
+
+  async function compararSemanaApiVsGuardada(semanaApi, semanaRealm) {
+  
+    const semanaDeApi = Number(semanaApi.codigoSemana); 
+    
+    const semanaDeRealm = Number(semanaRealm.CodigoSemana);
+      console.log(semanaDeApi,semanaDeRealm);
+    if(semanaDeApi > semanaDeRealm)
+    {
+       console.log(semanaDeApi,"mayor a ",semanaDeRealm);
+        return true;
+    }
+  
+  else{
+     return false;
+  }
+    
+  } 
+ 
+  //NO USAR EN PRODUCCION
+async function borrar_token() {
+  await AsyncStorage.removeItem("TOKEN");
+  await AsyncStorage.removeItem("TOKEN_EXPIRA");
+}
+
+   
+async function ObtenerTokenGuardado() {
+    const token=await AsyncStorage.getItem("TOKEN");
+    const fechaExpiracion= await AsyncStorage.getItem("TOKEN_EXPIRA");
+
+    return{token, fechaExpiracion};
+}
+     
+async function BorrarDatos() {
+  //await deleteRealmDatabase();
+  realmInstance.write(() => {
+  realmInstance.deleteAll();
+});
+ // await borrar_token();  
+}
 
   return (
     <View style={styles.container}>
+     <ModalCargando visible={MostraModal}/>
       <View style={styles.inputGroup}>
         <Image source={logo} style={styles.logo} />
         <TextInput
@@ -162,21 +417,64 @@ export default function LoginScreen({ navigation }) {
           }}
         />
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity style={styles.loginButton} onPress={HandleLogin}>
           <Text style={styles.loginButtonText}>INICIAR SESION</Text>
         </TouchableOpacity>
-      </View>
+
+{/* desbloquear === true &&*/}
+     {
+      <>
+          <TouchableOpacity
+                style={styles.botonTablas}
+                 onPress={() => exportarRealmAJSON(realmInstance)}
+              >
+                <Ionicons name="arrow-up-circle-outline" size={35} color="white" />
+                
+              </TouchableOpacity>
+
+               <TouchableOpacity
+                style={styles.botonTablas2}
+                 onPress={() => importarJSONaRealm(realmInstance)}
+              >
+                <Ionicons name="download-outline" size={35} color="white" />
+                
+              </TouchableOpacity>
+              
       <TouchableOpacity
-        style={styles.botonTablas}
+        style={styles.botonTablas3}
         onPress={() => {
           navigation.navigate("pantallaTablaDatos");
         }}
       >
-        <Ionicons name="person-add" size={35} color="white" />
+        <Ionicons name="cloud-outline" size={35} color="white" />
       </TouchableOpacity>
+       <TouchableOpacity
+        style={styles.botonTablas4}
+        onPress={() => BorrarDatos()}
+      >
+        <Ionicons name="trash-outline" size={35} color="white" />
+      </TouchableOpacity>
+       <TouchableOpacity
+        style={styles.botonTablas5}
+        onPress={() =>exportarRealmAJSON2(realmInstance)}
+      >
+        <Ionicons name="trash-outline" size={35} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.botonTablas6}
+        onPress={() =>importarJSONaRealmManual(realmInstance)}
+      >
+        <Ionicons name="trash-outline" size={35} color="white" />
+      </TouchableOpacity>
+      </>
+     }
+      </View>
     </View>
   );
+
+  
 }
+ 
 
 const styles = StyleSheet.create({
   container: {
@@ -244,7 +542,43 @@ const styles = StyleSheet.create({
   botonTablas: {
     position: "absolute",
     bottom: 0,
-    left: 50,
+    left:10,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+  botonTablas2: {
+    position: "absolute",
+    bottom: 0,
+    left: 80,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+
+  }, 
+  botonTablas3: 
+  {
+    position: "absolute",
+    bottom: 0,
+    left: 150,
     backgroundColor: "green",
     borderRadius: 40,
     width: 66,
@@ -262,5 +596,59 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: "white",
     fontWeight: "bold"
+  },
+   botonTablas4: 
+   {
+    position: "absolute",
+    bottom: 0,
+    left: 220,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+   botonTablas5: 
+   {
+    position: "absolute",
+    bottom: 0,
+    left: 300,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+   botonTablas6: 
+   {
+    position: "absolute",
+    bottom: 0,
+    left: 360,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
   }
 });

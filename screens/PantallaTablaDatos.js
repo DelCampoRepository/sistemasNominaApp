@@ -41,21 +41,6 @@ export default function PantallaTablaDatos() {
     },
     [realmInstance]
   );
-  const obtenerFechaYHora = date => {
-    const ahora = new Date(date);
-
-    // Fecha
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const anio = ahora.getFullYear();
-
-    // Hora Local
-    const horas = String(ahora.getHours()).padStart(2, "0");
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-
-    return `${dia}/${mes}/${anio} ${horas}:${minutos}:${segundos}`;
-  };
 
   const handleTouch = modelo => {
     const schema = realmInstance.schema.find(s => s.name === modelo);
@@ -139,8 +124,8 @@ export default function PantallaTablaDatos() {
               >
                 {schemasProp.map((prop, index) =>
                   <View key={index}>
-                    <View style={{ width: 300, borderLeftWidth: 1 }}>
-                      <Text style={{ textAlign: "center" }}>
+                    <View style={{width:index === 0 || index === 2 || index ===3 ? 145:300, borderLeftWidth: 1 }}>
+                      <Text style={{ textAlign: "Left",marginLeft:10 }}>
                         {prop}
                       </Text>
                     </View>
@@ -160,12 +145,12 @@ export default function PantallaTablaDatos() {
                     }}
                   >
                     {schemasProp.map((prop, i) =>
-                      <View key={i} style={{ width: 300, borderLeftWidth: 1 }}>
+                      <View key={i} style={{ width:i=== 0 || i ===2|| i ===3? 145:300, borderLeftWidth: 1 }}>
                         <Text
                           key={i}
-                          style={{ fontSize: 16, textAlign: "center" }}
+                          style={{ fontSize: 10, textAlign: i=== 0 || i ===2 || i ===3? "center" :"left", marginLeft:10, fontWeight:'bold' }}
                         >
-                          {String(registro[prop])}
+                          {registro[prop] instanceof Date? registro[prop].toISOString().trim() :  String(registro[prop]).trim()}
                         </Text>
                       </View>
                     )}

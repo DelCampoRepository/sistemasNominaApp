@@ -1,4 +1,4 @@
-import { se, tr } from "date-fns/locale";
+
 import React, { useState, useEffect } from "react";
 import {
   TouchableOpacity,
@@ -9,20 +9,80 @@ import {
   Alert
 } from "react-native";
 import { Dimensions } from "react-native";
-
+import {  useWindowDimensions } from 'react-native';
+import { exportarRealmAJSON } from "../../../utils/CreadorArchivos";
+import { id } from "date-fns/locale";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 7;
 const ITEM_WIDTH = SCREEN_WIDTH / 3.7 - ITEM_MARGIN * 4;
 
 export default function ActividadCard({
   item,
-  icono,
+ 
   setDatosEmpleadoNuevo,
   setModales,
   datosEmpleadoNuevo
 }) {
+   const { width } = useWindowDimensions();
+
   const [seleccion, setSeleccion] = useState(false);
-  // console.log("employe", item);
+  const [activadadTrabajada, setActividadTrabajada] = useState(false);
+  
+  useEffect(
+    () => {}, [datosEmpleadoNuevo]);
+  useEffect(
+    () => {
+    if (seleccion) {
+      try {
+        async function  guardado() {
+             
+          await GuardarEmpleadoCapturado();
+         await GuardarActividadEmpleado();
+          
+          setSeleccion(false);
+        }
+        guardado();
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }, [seleccion]);
+ useEffect(()=>{
+  revisarSiTieneActividadAsignada();
+  function revisarSiTieneActividadAsignada(){
+    try {
+      const ActividadesRepetidas = realmInstance
+        .objects("ActiviadesPorEmpleado")
+        .filtered(
+          `
+          codigoEmpleado ==$0 AND
+          codigoLote ==$1 AND
+          codigoNave == $2 AND
+          codigoTabla ==$3  AND
+          CodigoActividad ==$4  AND
+          CodigoAvance ==$5 AND 
+          fecha ==$6
+      `,
+          ActividaEmpleado.codigoEmpleado,
+          ActividaEmpleado.codigoLote,
+          ActividaEmpleado.codigoNave,
+          ActividaEmpleado.codigoTabla,
+          item.CodigoActividad,
+          item.CodigoAvance,
+          new Date(GenerarFecha(false, true))
+        );
+
+      if (ActividadesRepetidas.length > 0) {
+        setActividadTrabajada(true);
+      }
+
+    } catch (error) {
+      console.log(error);
+    }
+
+  }
+ }, [])
+
   const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
     //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
     const ahora = new Date();
@@ -76,11 +136,19 @@ export default function ActividadCard({
   };
 
   const handleOnPress = () => {
+  
     const semana = realmInstance.objects("Semana");
+     
     const userData = realmInstance.objects("UserData");
-    console.log(semana[0].CodigoTemporada);
+     
+      const fechaCaptura =
+    new Date(GenerarFecha(false, true));
+    const id = `${datosEmpleadoNuevo.CodigoEmpleado}-${datosEmpleadoNuevo.CodigoLote}-${datosEmpleadoNuevo.CodigoNave}-${datosEmpleadoNuevo.CodTabla}-${item.CodigoActividad}-${item.CodigoAvance}-${ fechaCaptura.getTime()}`;
+ 
+  
     setDatosEmpleadoNuevo((prev) => ({
       ...prev,
+       id: prev.id !== id? id: prev.id,
       CodigoActividad: item.CodigoActividad,
       CodigoAvance: item.CodigoAvance,
       rendimientoApli: item.Rendimiento,
@@ -92,7 +160,8 @@ export default function ActividadCard({
       avances: 0,
       jornal: 0,
       CodigoTemporada: String(semana[0].CodigoTemporada),
-      CodigoJefe: String(userData[0].codigo)
+      CodigoJefe: String(userData[0].codigo),
+      semana: ObtenerSemanaActiva()
     }));
 
     setSeleccion(true);
@@ -116,47 +185,51 @@ export default function ActividadCard({
     NomCortoUnidad: item.NomCortoUnidad,
     NomCompletoUnidad: item.NomCompletoUnidad,
     tieneSurcos: false,
-    tienePermiso: true,
+    tienePermiso: false,
     solicitoPermiso: false,
     tablaLabel: "",
     limiteMaximoCaptura: item.limiteMaximoCaptura,
     avances: 0,
-    jornal: 0
+    jornal: 0,
+    semana: ObtenerSemanaActiva(),
+    horasMaximasDeCaptura :Number( item.limiteMaximoCaptura)
+
   });
 
-  useEffect(() => {}, [datosEmpleadoNuevo]);
-  useEffect(() => {
-    if (seleccion) {
-      try {
-        GuardarEmpleadoCapturado();
+    /*
+      console.log("actividad",  ActividaEmpleado.codigoEmpleado,
+          ActividaEmpleado.codigoLote,
+          ActividaEmpleado.codigoNave,
+          ActividaEmpleado.codigoTabla,
+          item.CodigoActividad,
+          item.CodigoAvance,);
 
-        GuardarActividadEmpleado();
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }, [seleccion]);
-
+    */
   /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
-  function GuardarEmpleadoCapturado() {
-    const BuscarEmpleado = realmInstance.objects("EmpleadoCapturado").filtered(
-      `
-        CodigoEmpleado == $0 AND
-        CodigoLote == $1 AND 
-        CodigoNave == $2 AND
-        CodTabla == $3 AND
-        CodigoActividad == $4 AND
-        CodigoAvance == $5 AND
-        FechaCaptura == $6
-        `,
-      ActividaEmpleado.codigoEmpleado,
-      ActividaEmpleado.codigoLote,
-      ActividaEmpleado.codigoNave,
-      ActividaEmpleado.codigoTabla,
-      ActividaEmpleado.CodigoActividad,
-      ActividaEmpleado.CodigoAvance,
-      new Date(GenerarFecha(false, true))
-    );
+async  function  GuardarEmpleadoCapturado() {
+    const hoy = new Date();
+
+const inicioHoy = new Date(
+  hoy.getFullYear(),
+  hoy.getMonth(),
+  hoy.getDate(),
+  0,0,0,0
+);
+
+const finHoy = new Date(
+  hoy.getFullYear(),
+  hoy.getMonth(),
+  hoy.getDate(),
+  23,59,59,999
+);
+  const fechaCaptura = new Date(GenerarFecha(false, true));
+  const id = `${ActividaEmpleado.codigoEmpleado}-${ActividaEmpleado.codigoLote}-${ActividaEmpleado.codigoNave}-${ActividaEmpleado.CodTabla}-${ActividaEmpleado.CodigoActividad}-${ActividaEmpleado.CodigoAvance}-${fechaCaptura.getTime()}`;
+  const BuscarEmpleado =
+  await realmInstance
+  .objects("EmpleadoCapturado")
+  .filtered(`id == $0`,id);
+
+
     // console.log(BuscarEmpleado);
     if (BuscarEmpleado.length > 0) {
       Alert.alert(
@@ -168,19 +241,19 @@ export default function ActividadCard({
     }
   }
 
-  function GuardarActividadEmpleado() {
+ async function GuardarActividadEmpleado() {
     try {
       const ActividadesRepetidas = realmInstance
         .objects("ActiviadesPorEmpleado")
         .filtered(
           `
-      codigoEmpleado ==$0 AND
-      codigoLote ==$1 AND
-      codigoNave == $2 AND
-      codigoTabla ==$3  AND
-      CodigoActividad ==$4  AND
-      CodigoAvance ==$5 AND 
-      fecha ==$6
+            codigoEmpleado ==$0 AND
+            codigoLote ==$1 AND
+            codigoNave == $2 AND
+            codigoTabla ==$3  AND
+            CodigoActividad ==$4  AND
+            CodigoAvance ==$5 AND 
+            fecha ==$6
       `,
           ActividaEmpleado.codigoEmpleado,
           ActividaEmpleado.codigoLote,
@@ -190,24 +263,26 @@ export default function ActividadCard({
           ActividaEmpleado.CodigoAvance,
           new Date(GenerarFecha(false, true))
         );
-
+//const id = `${datosEmpleadoNuevo.CodigoEmpleado}-${datosEmpleadoNuevo.CodigoLote}-${datosEmpleadoNuevo.CodigoNave}-${datosEmpleadoNuevo.CodTabla}-${item.CodigoActividad}-${item.CodigoAvance}-${ fechaCaptura.getTime()}`;
+ //console.log(id);
+       
       if (ActividadesRepetidas.length > 0) {
         Alert.alert(
           "Del campo y asociados",
           "Empleado ya esta agregado con esta actividad!"
         );
-        setSeleccion(false);
-        return;
+    
       }
 
       realmInstance.write(() => {
         realmInstance.create("ActiviadesPorEmpleado", ActividaEmpleado);
+        realmInstance.create("EmpleadoCapturado", datosEmpleadoNuevo,"modified");
       });
 
-      realmInstance.write(() => {
-        realmInstance.create("EmpleadoCapturado", datosEmpleadoNuevo);
-      });
 
+
+      // await 
+        
       setModales((prev) => ({
         ...prev,
         modalActividades: false,
@@ -217,8 +292,27 @@ export default function ActividadCard({
       console.log(error);
     }
   }
+  function ObtenerSemanaActiva()
+  {
+    const semana = realmInstance.objects("Semana");
+    
+     if(semana.length > 0)
+     return semana[0].CodigoSemana
+    
+     return 0;
+  }
+  
   return (
-    <TouchableOpacity style={styles.Card} onPress={handleOnPress}>
+    <TouchableOpacity style={[styles.Card, { width: width > 600 ? "30%" : "44%" }]} onPress={handleOnPress}>
+      {activadadTrabajada && (
+         <Image
+                  source={require("../../../assets/check...png")}
+                  style={styles.checkIcon}
+                />
+      )}
+      <Text style={styles.nomcorto}>
+                {item.NomCortoUnidad}
+              </Text>
       <View style={styles.imageContainer}>
         <Image
           source={require("../../../assets/herramientas.png")}
@@ -226,7 +320,7 @@ export default function ActividadCard({
           resizeMode="contain"
         />
       </View>
-      <Text style={{ fontWeight: "bold", fontSize: 12 }}>
+      <Text style={{ fontWeight: "bold", fontSize: width > 600 ? 17 : 15 }}>
         {item.CodigoActividad}-{String(item.CodigoAvance).trim()}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "center", margin: "auto" }}>
@@ -235,7 +329,7 @@ export default function ActividadCard({
     </TouchableOpacity>
   );
 }
-//source={require("../../../assets/nave2.png")}
+
 const styles = StyleSheet.create({
   Card: {
     width: ITEM_WIDTH,
@@ -256,5 +350,19 @@ const styles = StyleSheet.create({
   icon: {
     width: "40%",
     height: "40%"
+  },
+  nomcorto: {
+    width: "30%",
+    height: 23,
+    position: "absolute",
+    top: 3,
+    left: 5
+  },
+  checkIcon: {
+    width: 23,
+    height: 23,
+    position: "absolute",
+    top: 3,
+    right: 5
   }
 });

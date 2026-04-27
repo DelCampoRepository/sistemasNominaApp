@@ -10,7 +10,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { Modal } from "react-native-paper";
 import { getRealmInstance } from "../../../realm";
-
+import {  useWindowDimensions } from 'react-native';
 export default function ModalBuscarEmpleado({
   visible,
   setModales,
@@ -23,7 +23,7 @@ export default function ModalBuscarEmpleado({
     codigoTemporada: "",
     codigoJefe: ""
   });
-
+const { width, height } = useWindowDimensions();
   useEffect(() => {
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
@@ -55,10 +55,20 @@ export default function ModalBuscarEmpleado({
   }, [datosEmpleado.codEmpleado]);
 
   const handleOnPressAgregar = () => {
-    if (String(datosEmpleado.codEmpleado).length < 6) {
+    if(String(datosEmpleado.codEmpleado).length <6)
+    {
       Alert.alert(
         "Del campo y asociados",
-        "El codigo de empleado aun no esta completo"
+        "El codigo de empleado no es valido!"
+      );
+      return;
+    }
+
+
+    if (String(datosEmpleado.nombreEmpleado) === "") {
+      Alert.alert(
+        "Del campo y asociados",
+        "Los datos del empleado aun no esta completo "
       );
       return;
     }
@@ -93,7 +103,7 @@ export default function ModalBuscarEmpleado({
 
   return (
     <Modal visible={visible} style={styles.modal}>
-      <View style={styles.viewContainer}>
+      <View style={[styles.viewContainer,{ width:width > 600 ? "65%" : "90%",}]}>
         <View style={styles.ViewCerrar}>
           <TouchableOpacity
             style={styles.cerrarIcono}
@@ -101,14 +111,15 @@ export default function ModalBuscarEmpleado({
           >
             <Image
               source={require("../../../assets/cerraar.png")}
-              style={{ width: 30, height: 30 }}
+              style={{ width: width > 600 ? 30 : 25, height: width > 600 ? 30 : 25 }}
               resizeMode="contain"
             />
           </TouchableOpacity>
         </View>
         <Text style={styles.labelCodigo}>Codigo de empleado</Text>
         <TextInput
-          style={styles.textImput}
+          maxLength={6}
+          style={[styles.textImput, { height: width > 600 ? "15%" : "13%",fontSize: width > 600 ? 15 : 13 }]}
           value={datosEmpleado.codEmpleado}
           keyboardType="numeric"
           onChangeText={(text) =>
@@ -117,15 +128,15 @@ export default function ModalBuscarEmpleado({
         />
         <Text style={styles.labelCodigo}>Nombre empleado</Text>
         <TextInput
-          style={styles.textImput}
+          style={[styles.textImput, { height: width > 600 ? "15%" : "13%" ,fontSize: width > 600 ? 15 : 13 }]}
           value={datosEmpleado.nombreEmpleado}
           editable={false}
         ></TextInput>
         <TouchableOpacity
-          style={styles.botonAgregar}
+          style={[styles.botonAgregar, { height: width > 600 ? "15%" : "13%" }]}
           onPress={handleOnPressAgregar}
         >
-          <Text style={styles.labelButtom}>Agregar</Text>
+          <Text style={[styles.labelButtom,{fontSize: width > 600 ? 18 : 16 }]}>Agregar</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -135,11 +146,11 @@ export default function ModalBuscarEmpleado({
 const styles = StyleSheet.create({
   modal: {
     flex: 1,
-    zIndex: 9
+    zIndex: 1
   },
   viewContainer: {
     margin: "auto",
-    width: "65%",
+   
     borderRadius: 10,
     backgroundColor: "white",
     padding: 10
@@ -161,22 +172,22 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1,
     paddingLeft: 10,
-    height: "15%",
+   
     backgroundColor: "#ebebeb9d",
-    fontSize: 18
+    
   },
   botonAgregar: {
     width: "100%",
-    height: "10$",
+   
     backgroundColor: "green",
     borderRadius: 5,
-    padding: 20,
+    justifyContent: "center",
     marginTop: 20,
     alignItems: "center"
   },
   labelButtom: {
     color: "white",
-    fontSize: 18,
+   
     fontWeight: "bold"
   }
 });

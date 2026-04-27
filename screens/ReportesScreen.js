@@ -13,10 +13,11 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import calendario from "../assets/calendario.png";
 import agricultor from "../assets/agricultor.png";
 import proteccion from "../assets/proteccion.png";
-import * as services from "../services/services";
-import { SurcosContext } from "../Contexts/SurcosContext";
-import { Dimensions } from "react-native";
 
+import {  useWindowDimensions } from 'react-native';
+import { Dimensions } from "react-native";
+import CustomOptions from "../src/components/CustomOptions";
+import CustomTitle from "../src/components/CustomTitle";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 8;
 const ITEM_WIDTH = SCREEN_WIDTH / 3 - ITEM_MARGIN * 2;
@@ -24,7 +25,7 @@ import { getRealmInstance } from "../realm";
 
 const ReportesScreen = () => {
   const navegacion = useNavigation();
-
+  const { width, height } = useWindowDimensions();
   const [loadingActividades, setLoadingActividades] = useState(false);
   const [loadingEmpleados, setLoadingEmpleados] = useState(false);
 
@@ -171,13 +172,6 @@ const ReportesScreen = () => {
     return `${day}-${month}-${year}`;
   };
 
-  const formatearFecha2 = fecha => {
-    if (!fecha) return "";
-    const day = String(fecha.getDate()).padStart(2, "0");
-    const month = String(fecha.getMonth() + 1).padStart(2, "0");
-    const year = fecha.getFullYear();
-    return `${year}-${month}-${day}`;
-  };
 
   // Función para manejar el reporte por Actividades
   const manejarReporteActividades = async () => {
@@ -405,95 +399,15 @@ const ReportesScreen = () => {
     }
   };
 
-  const cargarReportesEmp = async userData => {
-    setLoadingEmpleados(true);
-    try {
-      if (!userData) {
-        console.warn("userData es undefined");
-        return null;
-      }
-
-      const { codigoNave, codigoTabla, fechaInicio, fechaFin } = userData;
-
-      const realm = await getRealmInstance();
-
-      const codigoTemporada = CodigoTemporada;
-
-      const tablas = realm
-        .objects("Tablas")
-        .filtered(
-          `CodigoNave == "${codigoNave}" && CodigoTabla == ${codigoTabla}`
-        );
-
-      if (!tablas || tablas.length === 0) {
-        console.warn("No se encontró información de la tabla.");
-        return null;
-      }
-
-      const codigoLote = tablas[0].CodigoLote.toString();
-      const jefeNave = tablas[0].CodigoJefeNave;
-
-      const parametros = {
-        codigoLote,
-        codigoNave,
-        codigoTemporada,
-        fechaInicio,
-        fechaFin,
-        codigoJefeNave: jefeNave,
-        codigoTabla: parseInt(codigoTabla)
-      };
-      //console.log(parametros, "dwqdw")
-
-      //   console.log(" enviados:", parametros);
-
-      const response = await services.obtenerReporteEmpleados(parametros);
-      const empleados = response.datos || [];
-
-      if (!response.datos || response.datos.length === 0) {
-        //console.warn("No se recibió información del backend.");
-        // return null;
-      }
-      //  console.log(response.datos, "dedwa")
-
-      setListaEmpleados(response.datos);
-      //console.log(listaEmpleados, "edwas")
-      //  setListaEmpleados(listaReporteEmpleados)
-      realm.write(() => {
-        realm.delete(realm.objects("ReporteEmpleados"));
-        empleados.forEach(item => {
-          realm.create(
-            "ReporteEmpleados",
-            {
-              CodigoEmpleado: item.CodigoEmpleado,
-              Nombre: item.Nombre,
-              CantidadActividades: String(item.CantidadActividades)
-            },
-            "modified"
-          );
-        });
-      });
-
-      setListaEmpleados(empleados);
-
-      return {
-        codigoLote,
-        codigoJefeNave: jefeNave,
-        datos: empleados
-      };
-    } catch (error) {
-      console.error("Error en cargarReportesEmp:", error.message);
-      return null;
-    } finally {
-      setLoadingEmpleados(false);
-    }
-  };
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+  const [modales, setModales] = useState({});
   return (
     <View style={estilos.contenedor}>
-      <View style={estilos.contenedorDropdown}>
-        <DropdownComponent
+        <View style={{height:"10%", display:"flex", justifyContent:"flex-start", alignItems:"center"}}>
+          <CustomTitle title="- Reportes -" />
+      </View>
+     
+    <View style={{paddingTop:30, width:"100%"}}>
+         <DropdownComponent
           label="Naves"
           placeholder="Seleccione una nave"
           options={navesRealm}
@@ -507,8 +421,8 @@ const ReportesScreen = () => {
           selectedValue={naveSeleccionada}
           style={{ backgroundColor: "white", borderRadius: 10 }}
         />
-      </View>
       <DropdownComponent
+
         label="Tabla"
         placeholder="Seleccione una tabla"
         options={tablasFiltradas}
@@ -523,14 +437,14 @@ const ReportesScreen = () => {
         style={{ backgroundColor: "white", borderRadius: 10 }}
       />
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View style={{ flexDirection: width > 600 ? "row" : "column", justifyContent: "space-between" }}>
         <TouchableOpacity
           onPress={() => setMostrarFechaInicio(true)}
-          style={estilos.selectorFecha}
+          style={[estilos.selectorFecha, { width: width > 600 ? "45%" : "100%" }]}
         >
           <Text style={estilos.etiquetaFecha}>Fecha Inicial</Text>
           <View style={estilos.filaFecha}>
-            <Text style={estilos.textoFecha}>
+            <Text style={[estilos.textoFecha, { fontSize: width > 600 ? 16 : 13 }]}>
               {fechaInicio ? formatearFecha(fechaInicio) : "Seleccione fecha"}
             </Text>
             <Image
@@ -553,11 +467,11 @@ const ReportesScreen = () => {
 
         <TouchableOpacity
           onPress={() => setMostrarFechaFin(true)}
-          style={estilos.selectorFecha}
+          style={[estilos.selectorFecha, { width: width > 600 ? "45%" : "100%" }]}
         >
           <Text style={estilos.etiquetaFecha}>Fecha Final</Text>
           <View style={estilos.filaFecha}>
-            <Text style={estilos.textoFecha}>
+            <Text style={[estilos.textoFecha, { fontSize: width > 600 ? 16 : 14 }]}>
               {fechaFin ? formatearFecha(fechaFin) : "Seleccione fecha"}
             </Text>
             <Image
@@ -579,14 +493,14 @@ const ReportesScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={estilos.contenedorBotones}>
+      <View style={[estilos.contenedorBotones,{flexDirection: width > 600 ? "row" : "column"}]}>
         <TouchableOpacity
           onPress={manejarReporteActividades}
-          style={estilos.botonReporte}
+          style={[estilos.botonReporte, { width: width > 600 ? "45%" : "100%" , flexDirection: width > 600 ? "column" : "row" }]}
         >
           <Image
             source={proteccion}
-            style={estilos.imagenBoton2}
+            style={{width:width > 600 ? 90 : 60, height: width > 600 ? 90 : 70, marginRight: width > 600 ? 0 : 20}}
             resizeMode="contain"
           />
           <Text style={estilos.textoBoton}>Reporte por Actividades</Text>
@@ -594,53 +508,51 @@ const ReportesScreen = () => {
 
         <TouchableOpacity
           onPress={manejarReporteEmpleados}
-          style={estilos.botonReporte}
+          style={[estilos.botonReporte, { width: width > 600 ? "45%" : "100%", flexDirection: width > 600 ? "column" : "row" }]}
         >
           <Image
             source={agricultor}
-            style={estilos.imagenBoton}
+            style={{width:width > 600 ? 90 : 60, height: width > 600 ? 90 : 70, marginRight: width > 600 ? 0 : 20}}
             resizeMode="contain"
           />
           <Text style={estilos.textoBoton}>Reporte por Empleados</Text>
         </TouchableOpacity>
       </View>
     </View>
+     <CustomOptions setModales={setModales}  visible={false} />
+    </View>
   );
 };
 
 const estilos = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    padding: 20,
+  contenedor: {  
+    flex: 1,  
+    paddingHorizontal:20,  
     backgroundColor: "#f0fff0",
-    paddingTop: 30
+    paddingTop :5,
+    zIndex:0,
+     alignItems: "center",
   },
   contenedorDropdown: {
     marginBottom: 20
   },
   contenedorBotones: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    alignItems: "center"
+    
   },
 
   botonReporte: {
     backgroundColor: "white",
-    padding: 10,
+    marginHorizontal:"auto",
     borderRadius: 22,
     elevation: 7,
     alignItems: "center",
-    height: 150,
-    width: ITEM_WIDTH,
-    margin: ITEM_MARGIN,
+    marginVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 3,
     borderWidth: 0.5
   },
 
-  imagenBoton: {
-    width: 90,
-    height: 90
-  },
+ 
   imagenBoton2: {
     width: 90,
     height: 90
@@ -653,9 +565,9 @@ const estilos = StyleSheet.create({
     marginTop: 10
   },
   selectorFecha: {
-    width: "45%",
-    marginTop: 20,
-    marginBottom: 20,
+  
+    marginTop: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderRadius: 10
   },
@@ -663,11 +575,12 @@ const estilos = StyleSheet.create({
     width: 100,
     position: "relative",
     top: -10,
-    right: -20,
+    marginHorizontal:'auto' ,
     zIndex: 1,
     backgroundColor: "#f0fff0",
     fontWeight: "bold",
-    color: "black"
+    color: "black",
+    textAlign: "center"
   },
   filaFecha: {
     flexDirection: "row",
@@ -680,7 +593,7 @@ const estilos = StyleSheet.create({
     paddingBottom: 15,
     color: "#333",
     paddingLeft: 5,
-    fontSize: 13
+   
   },
   iconoCalendario: {
     marginLeft: 10,
@@ -688,5 +601,6 @@ const estilos = StyleSheet.create({
     height: 33
   }
 });
+
 
 export default ReportesScreen;

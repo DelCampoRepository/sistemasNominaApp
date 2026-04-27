@@ -1,20 +1,31 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { Alert, View } from "react-native";
-import { Text, ProgressBar, ActivityIndicator } from "react-native-paper";
+import { Text, ProgressBar} from "react-native-paper";
 import { StyleSheet } from "react-native";
 import LoadingDots from "../components/LoadingDots";
 import { getRealmInstance } from "../realm";
-import { ConsultarDatosSemanaActiva } from "../services/obtenerSemanaService";
-import * as services from "../services/services";
+import { syncNaves } from "../useCases/navesUseCase";
+import { syncTablas } from "../useCases/tablasUseCase";
+import { syncActividades } from "../useCases/actividadesUseCase";
+import { syncEmpleados } from "../useCases/empleadosUseCase";
+import { syncEmpleadosCapturados } from "../useCases/empleadosCapturadosUseCase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+
+
 export default function LoadingScreen({ navigation }) {
+ 
   const [realmInstance, setRealmInstance] = useState(null);
-  const [datosUsuaio, setDatosUsuario] = useState(null);
-  const [semanaStatus, setSemanaStatus] = useState(false);
   const [StatusText, setStatusText] = useState("");
   const [progressBarValue, setProgressBarValue] = useState(0.0);
-  useEffect(() => {
-    const inicializarRealm = async () => {
-      setRealmInstance(await getRealmInstance());
+
+  
+  useEffect(
+    () => {
+      
+      const inicializarRealm = async () => {
+    
+        setRealmInstance(await getRealmInstance());
     };
     inicializarRealm();
   }, []);
@@ -22,437 +33,169 @@ export default function LoadingScreen({ navigation }) {
   useEffect(
     () => {
       if (realmInstance && realmInstance !== null) {
-        const result = realmInstance.objects("UserData");
-
-        if (result.lenght > 0) {
-          Alert.alert("Del Campo y Asociados", "no hay datos de usuario!");
-          return;
-        }
-
-        setDatosUsuario(result[0]);
-      }
-    },
-    [realmInstance]
-  );
-
-  useEffect(
-    () => {
-      if (datosUsuaio !== null) {
-        const ObtenerSemanaActiva = async () => {
-          const datosSemana = await ConsultarDatosSemanaActiva(datosUsuaio);
-
-          if (datosSemana === null) {
-            navigation.goBack();
-          }
-
-          const semanaRealm = realmInstance.objects("Semana");
-
-          if (semanaRealm.length === 0) {
-            realmInstance.write(() => {
-              realmInstance.create(
-                "Semana",
-                {
-                  CodigoSemana: Number(datosSemana.codigoSemana),
-                  CodigoTemporada: Number(datosSemana.codigoTemporada),
-                  FechaInicial: datosSemana.fechaFinal,
-                  FechaFinal: datosSemana.fechaInicial
-                },
-                "modified"
-              );
-            });
-
-            setSemanaStatus(true);
-          } else {
-            const semanaRealm = realmInstance.objects("Semana");
-            if (
-              Number(semanaRealm[0].CodigoSemana) ===
-              Number(datosSemana.codigoSemana)
-            ) {
-              setSemanaStatus(true);
-            } else {
-              borrarDatos();
-              GuardarSemanaEnRealm(response);
-              setSemanaStatus(true);
-            }
-          }
-        };
-        ObtenerSemanaActiva();
-      }
-    },
-    [datosUsuaio]
-  );
-
-  useEffect(
-    () => {
-      if (semanaStatus === true) {
-        sincronizar();
-      }
-
-      async function sincronizar() {
+          
+          async function sincronizar() 
+          {
         try {
-          const userData = await realmInstance.objects("UserData");
-          const semana = await realmInstance.objects("Semana");
+         //                                              await BorrarDatos();
 
-          await obtenerNavesDeUsuario(
-            userData[0].codigo,
-            semana[0].CodigoTemporada,
-            userData[0].token
-          );
+        // await borrar_token();  
+         //si token no existe
+              const userData = realmInstance.objects('UserData');
+                console.log("data",userData);
+            if(await ValidarExistenciaToken() ===false  || userData.length <= 0){
+                Alert.alert("No existen datos de usuario, solo token, vuelva a ingresar las credenciales")
+                navigation.navigate("Login");
+                return;
+            }
+            else{//si si existe
+              
+                //si el token expira
+                if(await ValidarVigenciaFechaToken() === true)
+                { 
+                   navigation.navigate("Login");
+                   return;
+                }
+                else
+                {
+                    //  const tok =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJqZWZuYXZjb3MyMzEiLCJDb2RpZ29VYmljYWNpb24iOiIwMDEiLCJuYmYiOjE3NzYxODM0OTYsImV4cCI6MTc3NjI5NzYwMCwiaWF0IjoxNzc2MTgzNDk2LCJpc3MiOiJBcHAxMDIwMDEiLCJhdWQiOiJBcHAxMDIwMDFVc2VycyJ9.BMt8y1va4CaRoHPW0UaQfZpTHtWqPSRK2_Fsgt1_6ww"
+        //throw new Error("LA CONSULTA DE TABLAS NO RETORNA DATOS!, ERROR AL INTENTAR SOBREESCRIBIR LAS TABLAS ");
+                const userData = await realmInstance.objects("UserData");
+                const semana = await realmInstance.objects("Semana");
+                const datosToken = await  ObtenerTokenGuardado();
 
-          await obtenerTablasDeUsuario(
-            userData[0].codigo,
-            semana[0].CodigoTemporada,
-            userData[0].token
-          );
+                //obtenemos lista de naves
+                setStatusText("Sincronizando naves");
+                const step1 =  await syncNaves(realmInstance, userData[0].codigo, semana[0].CodigoTemporada, datosToken.token);
+                setStatusText("Naves sincronizadas");
+                setProgressBarValue(0.2);
+                //obtenemos lista de tablas    
+                setStatusText("Sincronizando tablas");
+                const step2 =  await syncTablas(realmInstance, userData[0].codigo, semana[0].CodigoTemporada,datosToken.token);
+                step2 === false?Alert.alert("Error","LA CONSULTA DE TABLAS NO RETORNA DATOS!, ERROR AL INTENTAR SOBREESCRIBIR LAS TABLAS "):
+                setStatusText("Tablas sincronizadas");
+                setProgressBarValue(0.4);
+                //obtenemos lista de actividades  
+                setStatusText("Sincronizando actividades");
+                const step3 =  await syncActividades(realmInstance, userData[0].codigo, semana[0].CodigoTemporada,datosToken.token); 
+                setStatusText("Actividades sincronizadas");
+                setProgressBarValue(0.6);
+                //obtenemos lista de empleados
+                setStatusText("Sincronizando empleados");
+                const step4 =  await syncEmpleados(realmInstance,semana[0].CodigoTemporada,  datosToken.token);
+                setStatusText("Empleados sincronizados");
+                setProgressBarValue(0.8);
+                //enviamos los empleados capturados
+                setStatusText("Sincronizando empleados capturados");
+                const step5 =  await syncEmpleadosCapturados( datosToken.token);
+                setStatusText("Empleados capturados sincronizados");
+                setProgressBarValue(1);
 
-          await obtenerActividades(
-            userData[0].codigo,
-            semana[0].CodigoTemporada,
-            userData[0].token
-          );
-
-          await obtenerEmpleados(semana[0].CodigoTemporada, userData[0].token);
-
-          await EnviarEmpleadosCapturados(userData[0].token);
-
-          navigation.replace("Home");
-        } catch (error) {
+                const step6 = await BorrarRegistrosViejos(semana[0]);
+                    console.log(step2,"asdasds")
+                if(step1 && step2 && step3 && step4 && step5)
+                {
+                  Alert.alert("Del campo y asociados","Se han sincronizado los datos");
+                
+                }else
+                {
+                    navigation.goBack();
+                //   Alert.alert("Error","No se han sincronizado los datos");
+                }
+                //mostramos la pantalla home
+                navigation.replace("Home");   
+              }
+            }
+          
+           
+        } 
+        catch (error) {
           Alert.alert("Error", `${error}`);
         }
       }
+      sincronizar();
+      }
+
     },
-    [semanaStatus]
+    [realmInstance]
+
   );
 
-  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
-    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
-    const ahora = new Date();
+  async function BorrarRegistrosViejos(datosSemanaRealm)
+  {
+      try{
+        const semanaActual = datosSemanaRealm.CodigoSemana;
+      const margen = 11;
+      const limite = semanaActual - margen;
+    
+      realmInstance.write(() => {
+        const viejos = realmInstance.objects("EmpleadoCapturado")
+        .filtered("semana <= $0", limite);
+        realmInstance.delete(viejos);
 
-    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
-
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    let horas = String(ahora.getHours()).padStart(2, "0");
-
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-    let fechaFormateada = ``;
-
-    if (SoloFecha) {
-      fechaFormateada = `${año}-${mes}-${dia}`;
-    } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
-        ? Number(minutos) + Number(2)
-        : minutos}:${segundos}`;
-    }
-    return fechaFormateada;
-  };
-
-  const obtenerNavesDeUsuario = async (codigo, temporada, token) => {
-    try {
-      setStatusText("Obteniendo naves del usuario");
-      const response = await services.obtenerNavesPorUsuario(
-        codigo,
-        temporada,
-        token
-      );
-      const data = response;
-
-      if (data.estado !== 1) {
-        Alert.alert("Error", "No hay informacion disponible de la semana");
-        navigation.replace("Login");
+         const viejosActividades = realmInstance.objects("ActiviadesPorEmpleado")
+        .filtered("semana <= $0", limite);
+        realmInstance.delete(viejosActividades);
+      });
+      return true;
       }
-
-      realmInstance.write(() => {
-        // Borrar tabla completa
-        const todasLasNaves = realmInstance.objects("Nave");
-        realmInstance.delete(todasLasNaves);
-
-        // Insertar nuevas
-        data.naves.forEach(nave => {
-          realmInstance.create(
-            "Nave",
-            {
-              CantidadSurcos: nave.cantidadSurcos,
-              CodigoLote: Number(nave.codigoLote),
-              CodigoNave: nave.codigo,
-              CodigoTemporada: Number(nave.temporada),
-              CodigoUsuario: nave.codigoUsuario,
-              DescripcionLote: nave.descripcionLote,
-              DescripcionNave: nave.descripcion,
-              TieneTablas: nave.tieneTablas
-            },
-            "modified"
-          );
-        });
-      });
-      setStatusText("Naves de usuario guardadas");
-      setProgressBarValue(0.3);
-    } catch (error) {
-      Alert.alert("Error", `${error}`);
-      console.log(error);
-    }
-  };
-
-  const obtenerTablasDeUsuario = async (codigo, codigoTemporada, token) => {
-    try {
-      setStatusText("Obteniendo lista de tablas de las naves");
-      const response = await services.obtenerTablasPorUsuario(
-        codigo,
-        codigoTemporada,
-        token
-      );
-
-      const data = response;
-
-      if (data.estado !== 1) {
-        Alert.alert("Error", "No se logró obtener infomración de las tablas");
+      catch(error)
+      {
+        Alert.alert("Error", "Problemas al borrar registros viejos!");
+        return false;
       }
-      realmInstance.write(() => {
-        if (realmInstance.objects("Tablas") !== null)
-          realmInstance.delete(realmInstance.objects("Tablas"));
-      });
+  }
 
-      if (realmInstance) {
-        realmInstance.write(() => {
-          data.tablasDeNave.forEach(tabla => {
-            const idUnico = `${tabla.codigoLote}-${tabla.codigoNave}-${tabla.codigoTabla}`;
+   async function ValidarExistenciaToken(){
+    
+    const token = await AsyncStorage.getItem("TOKEN");
+    const fechaExpiracionToken = await AsyncStorage.getItem("TOKEN_EXPIRA");
+    const res = token !== null &&  fechaExpiracionToken !== null;
+    
+       return res; 
+    
+  }
+async function ObtenerTokenGuardado() {
+    const token=await AsyncStorage.getItem("TOKEN");
+    const fechaExpiracion= await AsyncStorage.getItem("TOKEN_EXPIRA");
 
-            realmInstance.create(
-              "Tablas",
-              {
-                idCompuesto: idUnico,
-                CodigoTemporada: parseInt(tabla.temporada),
-                CodigoLote: parseInt(tabla.codigoLote),
-                CodigoNave: tabla.codigoNave,
-                CodigoTabla: parseInt(tabla.codigoTabla),
-                Descripcion: tabla.descripcion,
-                CantidadSurcos: parseInt(tabla.cantidadSurcos),
-                CodigoJefeNave: tabla.codigoUsuario
-              },
-              "modified"
-            );
-          });
-        });
-      }
-      const tab = realmInstance.objects("Tablas");
+    return{token, fechaExpiracion};
+}
 
-      setStatusText("Se han guardado las tablas de las naves");
-      setProgressBarValue(0.5);
-    } catch (error) {
-      Alert.alert(error);
-      console.log(error);
-    }
-  };
+async function ValidarVigenciaFechaToken() {
+  const fechaExpiracionToken = await AsyncStorage.getItem("TOKEN_EXPIRA");
 
-  const obtenerActividades = async (codigo, codigoTemporada, token) => {
-    try {
-      setStatusText("Obteniendo lista de actividades del usuario");
-      const response = await services.obtenerActividadesPorUsuario(
-        codigo,
-        codigoTemporada,
-        token
-      );
+  const fechaLimite = new Date(fechaExpiracionToken).getTime();
+  const fechaActual = Date.now();
 
-      if (response.estado !== 1) {
-        Alert.alert("Error", "No se ha logrado obtener las actividades");
-      }
-      realmInstance.write(() => {
-        if (realmInstance.objects("Actividades") !== null)
-          realmInstance.delete(realmInstance.objects("Actividades"));
-      });
+  const TokenExpiro = fechaActual > fechaLimite;
+  console.log("Expira:", fechaExpiracionToken);
+  console.log("Expiró el token?:", TokenExpiro);
+  return TokenExpiro;
+}
 
-      //  console.log(response.actividades, "sss");
-      realmInstance.write(() => {
-        response.actividades.forEach(act => {
-          realmInstance.create(
-            "Actividades",
-            {
-              CodigoUsuario: act.codigoUsuario,
-              CodigoLote: act.codigoLote,
-              CodigoCultivo: act.codigoCultivo,
-              CodigoActividad: act.codigoActividad,
-              CodigoAvance: act.codigoAvance,
-              Descripcion: act.descripcion,
-              Rendimiento: act.rendimiento,
-              CodigoTemporada: act.temporada,
-              tablaLabel: "",
-              RendimientoTope: act.rendimientoTope,
-              CodUnidad: act.codUnidad,
-              NomCortoUnidad: act.nomCortoUnidad,
-              NomCompletoUnidad: act.nomCompletoUnidad,
-              limiteMaximoCaptura: String(act.limiteMaximoCaptura)
-            },
-            "modified"
-          );
-        });
-      });
+  async function BorrarDatos() {
+  //await deleteRealmDatabase();
+  realmInstance.write(() => {
+  realmInstance.deleteAll();
+});
+  await borrar_token();  
+}
+async function borrar_token() {
+  await AsyncStorage.removeItem("TOKEN");
+  await AsyncStorage.removeItem("TOKEN_EXPIRA");
+}
 
-      setStatusText("Se han guardado las actividades del usuario");
-      setProgressBarValue(0.7);
-    } catch (error) {
-      console.log(error);
-      Alert.alert("error", error);
-    }
-  };
-
-  const obtenerEmpleados = async (temporada, token) => {
-    try {
-      setStatusText("Obteniendo lista de empleados");
-      const response = await services.obtenerEmpleadosPorTemporada(
-        temporada,
-        token
-      );
-
-      if (response.estado !== 1) {
-        Alert.alert("Error", "No se encontro ningun empleado");
-      }
-
-      realmInstance.write(() => {
-        if (realmInstance.objects("Empleado") !== null)
-          realmInstance.delete(realmInstance.objects("Empleado"));
-      });
-
-      realmInstance.write(() => {
-        response.empleados.forEach(emp => {
-          realmInstance.create(
-            "Empleado",
-            {
-              CodigoEmpleado: emp.codigoEmpleado,
-              Nombre: emp.nombre,
-              CodigoTemporada: emp.temporada,
-              CodigoLote: emp.codigoLote,
-              CodigoNave: emp.codigoNave,
-              CodigoJefeNave:
-                emp.codigoJefeNave === null ? "" : emp.codigoJefeNave
-            },
-            "modified"
-          );
-        });
-      });
-
-      setStatusText("Se han guardado los empleados");
-      setProgressBarValue(1);
-    } catch (error) {
-      console.log(error);
-      Alert.alert("error", error);
-    }
-  };
-
-  const EnviarEmpleadosCapturados = async token => {
-    try {
-      const EmpleadosAEnviar = realmInstance.objects("EmpleadoCapturado");
-      realmInstance.write(() => {
-        EmpleadosAEnviar.forEach(empleado => {
-          const surcosEmpleadoAEnviar = realmInstance.objects("Surco").filtered(
-            `
-              codEmpleado == $0 AND
-              lote == $1 AND
-              nave == $2 AND
-              tabla ==$3 AND
-              actividad == $4 AND 
-              avance ==$5 
-             `,
-            empleado.CodigoEmpleado,
-            empleado.CodigoLote,
-            empleado.CodigoNave,
-            empleado.CodTabla,
-            empleado.CodigoActividad,
-            empleado.CodigoAvance
-          );
-
-          empleado.surcosAvances.splice(0);
-          surcosEmpleadoAEnviar.forEach(surco => {
-            empleado.surcosAvances.push({
-              numeroSurco: Number(surco.surco),
-              avance: surco.avanceAcum
-            });
-          });
-        });
-      });
-
-      //const emp = realmInstance.objects("EmpleadoCapturado");
-
-      const response = await services.EnviarEmpleados(EmpleadosAEnviar, token);
-
-      realmInstance.write(() => {
-        response.forEach(empResp => {
-          const empleado = realmInstance.objects("EmpleadoCapturado").filtered(
-            `CodigoEmpleado == $0 AND
-            CodigoLote == $1 AND
-            CodigoNave == $2 AND
-            CodTabla == $3 AND
-            CodigoActividad == $4 AND
-            CodigoAvance == $5 AND
-            FechaCaptura == $6`,
-            empResp.codigoEmpleado,
-            empResp.codigoLote,
-            empResp.codigoNave,
-            empResp.codTabla,
-            empResp.codigoActividad,
-            empResp.codigoAvance,
-            new Date(empResp.fechaCaptura)
-          )[0];
-
-          if (empleado) {
-            // actualizar campos
-            Object.assign(empleado, {
-              estado: empResp.estado
-            });
-          }
-        });
-      });
-      console.log("✅Sincronización completada");
-      Alert.alert("Del Campo y Asociados", "Sincronización completa");
-      //console.log(JSON.stringify(listaEmpleados, null, 2));
-    } catch (err) {
-      console.log("error", err);
-    }
-  };
-
-  const borrarDatos = () => {
-    if (realmInstance !== null) {
-      realmInstance.write(() => {
-        realmInstance.delete(realmInstance.objects("Actividades"));
-        realmInstance.delete(realmInstance.objects("EmpleadoCapturado"));
-        realmInstance.delete(realmInstance.objects("Empleado"));
-        realmInstance.delete(realmInstance.objects("Tablas"));
-        realmInstance.delete(realmInstance.objects("Nave"));
-        realmInstance.delete(realmInstance.objects("ReportesAct"));
-        realmInstance.delete(realmInstance.objects("Surco"));
-        realmInstance.delete(realmInstance.objects("SurcoAvance"));
-        realmInstance.delete(realmInstance.objects("Sincronizar"));
-        realmInstance.delete(realmInstance.objects("Semana"));
-        realmInstance.delete(realmInstance.objects("ActiviadesPorEmpleado"));
-      });
-    }
-  };
-
-  const GuardarSemanaEnRealm = response => {
-    realmInstance.write(() => {
-      realmInstance.create(
-        "Semana",
-        {
-          CodigoSemana: Number(response.codigoSemana),
-          CodigoTemporada: Number(response.codigoTemporada),
-          FechaInicial: response.fechaFinal,
-          FechaFinal: response.fechaInicial
-        },
-        "modified"
-      );
-    });
-  };
 
   return (
     <View style={styles.container}>
       <View style={styles.uperContainer}>
         <LoadingDots />
 
-        <Text variant="bodyMedium" style={{ marginTop: 50 }}>
+        <Text variant="bodyMedium" style={{ marginTop: 50 , color:"black" }}>
           Sincronizando datos con el servidor
         </Text>
-        <Text variant="bodyMedium" style={{ marginTop: 10 }}>
+        <Text variant="bodyMedium" style={{ marginTop: 10 , color:"black" }}>
           Por favor espere!
         </Text>
       </View>
@@ -462,7 +205,7 @@ export default function LoadingScreen({ navigation }) {
           progress={progressBarValue}
           color="green"
         />
-        <Text variant="bodyMedium">
+        <Text variant="bodyMedium" style={{color:"black"}}>
           {StatusText}
         </Text>
       </View>
@@ -491,5 +234,22 @@ const styles = StyleSheet.create({
     display: "flex",
 
     backgroundColor: "#f0fff0"
-  }
+  }, botonTablas: {
+    position: "absolute",
+    bottom: 0,
+    left: 50,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  },
+
 });

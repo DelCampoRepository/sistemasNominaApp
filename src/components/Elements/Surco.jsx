@@ -1,7 +1,12 @@
 import React from "react";
 import { Text, StyleSheet, Pressable } from "react-native";
 
-export default function Surco({ item, onPressSurco, onLongPressSurco }) {
+export default function Surco({
+  item,
+  onPressSurco,
+  onLongPressSurco,
+  setSumadorSurcos
+}) {
   // Determinamos si el surco está bloqueado (ocupado al 100% por otros)
   const esGris = item.estado === "g";
 

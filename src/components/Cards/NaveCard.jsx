@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
 import { Dimensions } from "react-native";
-
+import {  useWindowDimensions } from 'react-native';
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 10;
 const ITEM_WIDTH = SCREEN_WIDTH / 3 - ITEM_MARGIN * 4;
@@ -20,6 +20,7 @@ export default function NaveCard({
 }) {
   const fuenteImagen = IMAGENES[icono] || IMAGENES.nave;
 
+   const { width } = useWindowDimensions();
   const handleOnPress = () => {
     setDatosEmpleadoNuevo((prev) => ({
       ...prev,
@@ -43,22 +44,24 @@ export default function NaveCard({
   };
 
   return (
-    <TouchableOpacity style={styles.Card} onPress={handleOnPress}>
+    <TouchableOpacity style={[styles.Card, { width: width > 400 ? "34%" : "44%" }]} onPress={handleOnPress}>
       <View style={styles.imageContainer}>
         <Image source={fuenteImagen} style={styles.icon} resizeMode="contain" />
       </View>
 
-      <Text style={{ fontWeight: "bold", fontSize: 12 }}>
+      <Text style={{ fontWeight: "bold", fontSize: width > 400 ? 12 : 9.5 }}>
         {item.CodigoLote}-{String(item.DescripcionLote).trim()}
       </Text>
-      <Text>{item.DescripcionNave}</Text>
+      <Text style={{ fontSize: width > 400 ? 11 : 9.5 }}>
+        {item.DescripcionNave}
+        </Text>
     </TouchableOpacity>
   );
 }
 //source={require("../../../assets/nave2.png")}
 const styles = StyleSheet.create({
   Card: {
-    width: ITEM_WIDTH,
+    
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
     borderRadius: 10,

@@ -1,18 +1,12 @@
 import { controller, timeOutId } from "./TimeOutController";
 import { API_URL } from "../utils/constants";
 import { Alert } from "react-native";
-export const ConsultarDatosSemanaActiva = async userData => {
+export const ConsultarDatosSemanaActiva = async token => {
   try {
-    if (!userData) {
-      Alert.alert(
-        "Error",
-        "userData no existe, no se puede realizar la peticion de la semana activa!"
-      );
-      return;
-    }
-
-    const token = userData.token;
-
+       
+ 
+     
+  
     const response = await fetch(`${API_URL}/Semana`, {
       method: "GET",
       headers: {
@@ -21,7 +15,7 @@ export const ConsultarDatosSemanaActiva = async userData => {
       }
     });
     const data = await response.json();
-
+     console.log(data);
     if (data.estado === 1) {
       return data;
     } else {
@@ -34,8 +28,10 @@ export const ConsultarDatosSemanaActiva = async userData => {
   } catch (error) {
     if (error.name === "AbortError") {
       console.error("La petición superó el tiempo límite");
+      Alert.alert("error",`${error}`)
     } else {
       console.error("Error en la petición:", error);
+        Alert.alert("error",`${error}`)
     }
     return null;
   }

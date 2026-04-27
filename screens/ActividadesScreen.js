@@ -14,16 +14,17 @@ import { useNavigation } from "@react-navigation/native";
 import { getRealmInstance } from "../realm";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
-
+import CustomTitle from "../src/components/CustomTitle";
 import { SurcosContext } from "../Contexts/SurcosContext";
-import { Dimensions } from "react-native";
+import CustomOptions from "../src/components/CustomOptions";
+import {  useWindowDimensions } from 'react-native';
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 18;
-const ITEM_WIDTH = SCREEN_WIDTH / 3 - ITEM_MARGIN * 3;
-const ActividadesScreen = ({ route }) => {
-  const [loading, setLoading] = useState(false);
 
+const ActividadesScreen = ({ route }) => {
+
+  const [loading, setLoading] = useState(false);
+  const { width, height } = useWindowDimensions();
   const [realmInstance, setRealmInstance] = useState(null);
   const [empleadosPorActividad, setEmpleadosPorActividad] = useState({});
   const [avancesPorActividad, setAvancesPorActividad] = useState({});
@@ -95,6 +96,7 @@ const ActividadesScreen = ({ route }) => {
   };
 
   const calcularAvancesPorActividad = () => {
+    
     if (!realmInstance || !actividades.length) return;
 
     const totales = {};
@@ -192,7 +194,7 @@ const ActividadesScreen = ({ route }) => {
   const renderItem = ({ item }) => {
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card,{width: width > 600 ? "28%": "40%" }]}
         onPress={() => {
           setCodigoActividad(item.CodigoAvance);
 
@@ -298,6 +300,8 @@ const ActividadesScreen = ({ route }) => {
 
   return (
     <View style={styles.contenedor}>
+     
+            <CustomTitle title="- Actividades -" />
       <View style={styles.headerContainer}>
         <View style={styles.subcontainer}>
           <Text style={[styles.headerDetailText, styles.sharedoption]}>
@@ -312,7 +316,8 @@ const ActividadesScreen = ({ route }) => {
           </Text>
         </View>
       </View>
-      {loading
+      <View style={{zIndex: -2, height:"74%"}}  >
+          {loading
         ? <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#00aa00" />
           </View>
@@ -321,11 +326,13 @@ const ActividadesScreen = ({ route }) => {
               item.CodigoActividad && item.CodigoAvance
                 ? `${item.CodigoActividad}-${item.CodigoAvance}`
                 : index.toString()}
-            numColumns={3}
+            numColumns={width > 600 ? 3 : 2}
             data={actividades}
             renderItem={renderItem}
             showsVerticalScrollIndicator={true}
           />}
+      </View>
+           <CustomOptions visible={false}/>
     </View>
   );
 };
@@ -334,14 +341,15 @@ const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
     backgroundColor: "#f0fff0",
-    paddingTop: 18,
+    zIndex: -2,
     alignItems: "center"
   },
   subcontenedor: {
     flex: 1,
     backgroundColor: "#f0fff0",
     paddingTop: 18,
-    alignItems: "center"
+    alignItems: "center",
+     zIndex: -2,
   },
   imageContainer: {
     width: "100%",
@@ -378,7 +386,7 @@ const styles = StyleSheet.create({
     columnGap: 18
   },
   card: {
-    width: ITEM_WIDTH,
+    
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -427,7 +435,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 18,
     borderRadius: 2,
-    width: "100%"
+    width: "100%",
+    height:"10%"
   },
 
   subcontainer: {

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { getRealmInstance } from "../../../realm";
 import { useEffect, useState } from "react";
+import {  useWindowDimensions } from 'react-native';
 export default function ModalAgregarAvance({
   setModales,
   modales,
@@ -18,7 +19,7 @@ export default function ModalAgregarAvance({
 }) {
   const [avance, setAvance] = useState("0");
   const [RealmInstance, setRealmInstance] = useState(null);
-
+  const { width } = useWindowDimensions();
   useEffect(() => {
     async function getRealm() {
       setRealmInstance(await getRealmInstance());
@@ -143,7 +144,7 @@ export default function ModalAgregarAvance({
 
   return (
     <Modal visible={modales.modalAvance} style={styles.mainModal}>
-      <View style={styles.container}>
+      <View style={[styles.container,{width: width > 600 ? "60%" : "80%"}]}>
         <View style={styles.ViewCerrar}>
           <TouchableOpacity
             style={styles.cerrarIcono}
@@ -158,7 +159,7 @@ export default function ModalAgregarAvance({
         </View>
 
         {Object.keys(datosActividad).length > 0 && (
-          <View>
+          <View style={{ marginTop: 20, borderWidth: 1, padding: 10, borderRadius: 5 }}>
             <Text style={{ fontSize: 12 }}>
               {" "}
               Cod. empleado: {datosActividad.codigoEmpleado}
@@ -211,15 +212,15 @@ export default function ModalAgregarAvance({
           Avance
         </Text>
         <TextInput
-          style={styles.textImput}
+          style={[styles.textImput, { height: width > 600 ? "12%" : "10%" ,fontSize: width > 600 ? 13 : 12 }]}
           value={avance}
           onChangeText={(text) => {
             setAvance(text);
           }}
           keyboardType="decimal-pad"
         />
-        <TouchableOpacity style={styles.botonAgregar} onPress={handleOnpress}>
-          <Text style={{ fontWeight: "bold", fontSize: 16, color: "white" }}>
+        <TouchableOpacity style={[styles.botonAgregar, { height: width > 600 ? "12%" : "10%" }]} onPress={handleOnpress}>
+          <Text style={{ fontWeight: "bold", fontSize: width > 600 ? 13 : 12, color: "white" }}>
             {datosActividad.avances === 0
               ? "AGREGAR AVANCE"
               : "MODIFICAR AVANCE"}
@@ -258,9 +259,15 @@ const styles = StyleSheet.create({
     height: "10$",
     backgroundColor: "green",
     borderRadius: 5,
-    padding: 20,
+    justifyContent: "center",
     marginTop: 20,
     alignItems: "center"
+  },
+  cerrarIcono: {
+    position: "absolute",
+    
+    
+    zIndex: 1
   },
   ViewCerrar: {
     marginTop: 10,

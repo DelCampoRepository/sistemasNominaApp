@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { getRealmInstance } from "../realm";
-import { Ionicons } from "@expo/vector-icons";
+
 import CustomModal from "../src/components/Modal/MotalComponent";
 import ModalBuscarEmpleado from "../src/components/Modal/ModalBuscarEmpleado";
 import ListaEmpleadosAgregados from "../src/components/Listas/ListaEmpleadosAgregados";
 import ModalAgregarAvance from "../src/components/Modal/ModalAgregarAvance";
 import ModalSurcos from "../src/components/Modal/ModalSurcos";
+import {  useWindowDimensions } from 'react-native';
+import CustomTitle from "../src/components/CustomTitle";
+import CustomOptions from "../src/components/CustomOptions";
 
-import { useNavigation } from "@react-navigation/native";
 const ListaEmpleados = ({ route }) => {
   const [realmInstance, setRealmInstance] = useState(null);
 
@@ -23,25 +25,11 @@ const ListaEmpleados = ({ route }) => {
     modalSurcos: false
   });
 
-  const [datosNave, setDatosNave] = useState({
-    codNave: "",
-    descripcionNave: ""
-  });
 
-  const [datosLote, setDatosLote] = useState({
-    codLote: "",
-    descripcionLote: ""
-  });
-
-  const [datosTabla, setDatosTabla] = useState({
-    codTabla: "",
-    descripcionTabla: ""
-  });
 
   const [datosActividad, setDatosActividad] = useState({});
-
+  const { width, height } = useWindowDimensions();
   const [ListaEmpleadosEnRealm, setListaDeEmpleadosEnRealm] = useState([]);
-
   const [datosEmpleadoNuevo, setDatosEmpleadoNuevo] = useState({
     CodigoEmpleado: "",
     Nombre: "",
@@ -55,7 +43,7 @@ const ListaEmpleados = ({ route }) => {
     horaInicioActividad: null,
     horaFinalActividad: null,
     limiteMaximoDeCaptura: null,
-    tienePermiso: true,
+    tienePermiso: false,
     solicitoPermiso: false,
     Avances: 0,
     rendimientoApli: 0,
@@ -65,12 +53,11 @@ const ListaEmpleados = ({ route }) => {
     tieneSurcos: false,
     estado: 0
   });
-  //console.log("datos", JSON.stringify(datosEmpleadoNuevo, null, 2));
   const [datosEmpleadoSeleccionado, setDatosEmpleadoSeleccionado] = useState(
     {}
   );
 
-  const navigation = useNavigation();
+ 
 
   useEffect(() => {
     const inicializarRealm = async () => {
@@ -82,11 +69,15 @@ const ListaEmpleados = ({ route }) => {
   useEffect(
     () => {
       const hoy = new Date(GenerarFecha(false, true));
-
+        console.log(hoy)
       if (realmInstance !== null) {
+
+     
+
+
         const empleadosRealm = realmInstance
           .objects("EmpleadoCapturado")
-          .filtered(`FechaCaptura == $0 AND FechaCaptura == $0`, hoy);
+          .filtered(`FechaCaptura == $0`, hoy);
 
         // Definimos la función que procesa los datos
         const actualizarLista = () => {
@@ -101,14 +92,14 @@ const ListaEmpleados = ({ route }) => {
                 return acc;
               }, {})
             );
-
+              console.log(empleadosUnicos.length)
             // 3. Guardamos en el estado
             setListaDeEmpleadosEnRealm(empleadosUnicos);
-            console.log(
+           /** console.log(
               "Listener de Realm: Lista actualizada con",
               empleadosUnicos.length,
               "empleados."
-            );
+            ); */
           } catch (err) {
             console.error("Error procesando datos de Realm:", err);
           }
@@ -120,25 +111,30 @@ const ListaEmpleados = ({ route }) => {
         // Suscribir el listener para cambios futuros
         empleadosRealm.addListener(actualizarLista);
 
+
+
+
+
         return () => {
           // Limpieza vital para evitar fugas de memoria o errores de "Object is invalidated"
           if (empleadosRealm) {
             empleadosRealm.removeAllListeners();
           }
         };
+
+      
       }
+    
+   
     },
     [realmInstance]
   );
 
-  const obtenerHoyCeroHoras = () => {
-    const fecha = new Date();
+  
+ 
 
-    // Seteamos: Horas, Minutos, Segundos, Milisegundos
-    fecha.setHours(0, 0, 0, 0);
 
-    return fecha;
-  };
+
   const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
     //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
     const ahora = new Date();
@@ -164,7 +160,9 @@ const ListaEmpleados = ({ route }) => {
     return fechaFormateada;
   };
   return (
+    
     <View style={styles.mainContainer}>
+      <CustomTitle title="Actividades por empleado" style={{ elevation: 0 }} />
       <ModalBuscarEmpleado
         visible={modales.modalEmpleados}
         setModales={setModales}
@@ -212,22 +210,13 @@ const ListaEmpleados = ({ route }) => {
           realmInstance={realmInstance}
         />}
 
-      <TouchableOpacity
-        style={styles.botonAgregar}
-        onPress={() => {
-          setModales(prev => ({
-            ...prev,
-            modalEmpleados: true
-          }));
-        }}
-      >
-        <Ionicons name="person-add" size={35} color="white" />
-      </TouchableOpacity>
+        {realmInstance !== null && <CustomOptions setModales={setModales} realmInstance={realmInstance}/>}
 
-      <View />
+      <View/>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   botonAgregar: {
@@ -240,7 +229,6 @@ const styles = StyleSheet.create({
     height: 66,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -267,8 +255,23 @@ const styles = StyleSheet.create({
 
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f0fff0",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    backgroundColor: "#f1fff1",
     zIndex: -2
   }
 });
+
 export default ListaEmpleados;
+/*
+f1fff1
+v
+      <TouchableOpacity
+        style={styles.botonTablas}
+        onPress={() => {
+          navigation.navigate("pantallaTablaDatos");
+        }}
+      >
+        <Ionicons name="person-add" size={35} color="white" />
+      </TouchableOpacity>
+*/

@@ -12,8 +12,8 @@ import {
 import { Modal } from "react-native-paper";
 
 import Surco from "../Elements/Surco";
-import { exists } from "realm";
 
+import {  useWindowDimensions } from 'react-native';
 export default function ModalSurcos({
   setModales,
   modales,
@@ -29,6 +29,9 @@ export default function ModalSurcos({
   const [listaSurcos, setListaSurcos] = useState([]);
   const [sumaSurcos, setSumasurcos] = useState(0);
   const [surcosIndexSele, setSurcosIndexSele] = useState([]);
+  const [sumadorDeSurcos, setSumadorSurcos] = useState(0);
+  const [guardado, setguardardado] = useState(false);
+   const { width } = useWindowDimensions();
   useEffect(() => {}, []);
 
   useEffect(() => {
@@ -63,15 +66,20 @@ export default function ModalSurcos({
     try {
       //  console.log("se ejecuta");
       //se obitenen los surcos ya trabajados en este lote,nave,tabla
-      const trabajadosEnRealm = realmInstance
-        .objects("Surco")
-        .filtered(
-          "lote ==$0 AND nave == $1 AND tabla == $2 ",
-          datosActividad.codigoLote,
-          datosActividad.codigoNave,
-          datosActividad.codigoTabla,
-          new Date(datosEmpleadoSeleccionado.FechaCaptura)
-        );
+      const trabajadosEnRealm = realmInstance.objects("Surco").filtered(
+        `lote == $0 AND
+         nave == $1 AND 
+         tabla == $2 AND 
+         actividad == $3 AND  
+         avance == $4 AND 
+         fecha == $5`,
+        datosActividad.codigoLote,
+        datosActividad.codigoNave,
+        datosActividad.codigoTabla,
+        datosActividad.CodigoActividad,
+        datosActividad.CodigoAvance,
+        new Date(datosEmpleadoSeleccionado.FechaCaptura)
+      );
 
       const temporalGeneral = [];
       const temporalSeleccionados = [];
@@ -172,28 +180,41 @@ export default function ModalSurcos({
   };
 
   //controlamos si el surco se presiona ligeramente
-  const handlePress = (item) => {
-    //nuevo avance a asignar sera 1 0 sero depende si se selecciona o deselecciona
-    const nuevoAvance = item.avanceAcum > 0 ? 0 : 1;
 
-    //csi el nuevo avance mas el avanceTotalOtrso para ese surco es  mayor a 1
-    //lanzamos la alerta y retornamos
+  const handlePress = (item) => {
+    // Si ya tiene avance (está seleccionado) → deseleccionar
+    if (item.avanceAcum > 0) {
+      const valorQuitar = item.avanceAcum; // puede ser 1, 0.5, 0.25, etc.
+
+      actualizarEstadoSurco({
+        ...item,
+        avanceAcum: 0,
+        estado: "w"
+      });
+
+      setSumadorSurcos((prev) => prev - valorQuitar);
+      return;
+    }
+
+    // Si no tiene avance → seleccionar con valor 1
+    const nuevoAvance = 1;
+
     if (item.avanceTotalOtros + nuevoAvance > 1) {
       Alert.alert(
         "Error",
-        "Este surco ya esta siendo trabajado por otro empleado"
+        "Este surco ya está siendo trabajado por otro empleado"
       );
       return;
     }
-    //actualizamos los estados del surco seleccionado , poniendo el color y el avance que representa
-    //todo lo demas permanece igual
+
     actualizarEstadoSurco({
       ...item,
       avanceAcum: nuevoAvance,
-      estado: nuevoAvance == 1 ? "gr" : "w"
+      estado: "gr"
     });
-  };
 
+    setSumadorSurcos((prev) => prev + nuevoAvance);
+  };
   const handleLongPress = (item) => {
     //seteamos el nuevo surco seleccionado
     setSurcoSeleccionado(item);
@@ -206,11 +227,9 @@ export default function ModalSurcos({
   };
 
   const confirmarAvanceDecimal = () => {
-    //convertimos a float el valor ingresado en inputText
     const valor = parseFloat(avanceSurco);
-    //evaluamos errores
     if (isNaN(valor) || valor < 0 || valor > 1) return;
-    //evaluamos que no sobrepase el limite
+
     if (surcoSeleccionado.avanceTotalOtros + valor > 1) {
       Alert.alert(
         "Limite excedido",
@@ -219,20 +238,39 @@ export default function ModalSurcos({
       return;
     }
 
-    //actualizamos  el estado del surco seleccionado
+    // Restar el avance anterior y sumar el nuevo, redondeado
+    setSumadorSurcos(
+      (prev) =>
+        Math.round((prev - surcoSeleccionado.avanceAcum + valor) * 100) / 100
+    );
 
     actualizarEstadoSurco({
       ...surcoSeleccionado,
       avanceAcum: valor,
       estado: valor === 1 ? "gr" : valor === 0 ? "w" : "o"
     });
-    //dejamos de mostrar el inputText
+
     setSurcoDecimal(false);
   };
-
   // console.log("del usuario", surcosSeleccionados);
   const guardarSurcos = async () => {
     try {
+      const totalAvances =
+        Number(sumadorDeSurcos) + Number(datosActividad.avances);
+      const rendimiento = Number(datosActividad.Rendimiento);
+      const tope = Number(datosActividad.RendimientoTope);
+
+      // Redondear a 2 decimales para evitar falsos positivos por punto flotante
+      const jornalCalculado =
+        Math.round((totalAvances / rendimiento) * 100) / 100;
+
+      if (rendimiento > 0 && jornalCalculado > tope) {
+        Alert.alert(
+          "Error",
+          `Rendimiento tope excedido.\n\nJornal calculado: ${jornalCalculado}\nTope permitido: ${tope}`
+        );
+        return;
+      }
       //Alert.alert("Éxito", "Avances guardados correctamente");
       //  handleCerrarModal();
       //      console.log(obtenerFechaYHora());
@@ -267,7 +305,7 @@ export default function ModalSurcos({
           surcosSele.push(s.surco);
           // 1. Buscar si ya existe para actualizarlo
           sumat += s.avanceAcum;
-          console.log("ssss", s);
+
           const existe = realmInstance.objects("Surco").filtered(
             `codEmpleado == $0 AND 
               surco == $1 AND 
@@ -335,11 +373,13 @@ export default function ModalSurcos({
         // 2. Opcional: Borrar los que el empleado desmarcó (avance 0)
         // (Lógica de borrado explicada en pasos anteriores)
       });
-      handleCerrarModal();
+      setSumadorSurcos(0);
+      setguardardado(true);
     } catch (error) {
       Alert.alert("Error al guardar", error.toString());
     }
   };
+
   const handleCerrarModal = () => {
     setModales((prev) => ({
       ...prev,
@@ -347,39 +387,16 @@ export default function ModalSurcos({
     }));
     setSurcoDecimal(false);
     setAvanceSurco("");
-  };
-
-  const obtenerFechaYHora = () => {
-    const ahora = new Date();
-
-    // Fecha
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const anio = ahora.getFullYear();
-
-    // Hora Local
-    const horas = String(ahora.getHours()).padStart(2, "0");
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-
-    return `${dia}/${mes}/${anio} ${horas}:${minutos}:${segundos}`;
-  };
-
-  const convertirAObjetoDate = (stringFecha) => {
-    // Separamos fecha de hora
-    const [fecha, hora] = stringFecha.split(" ");
-    const [dia, mes, anio] = fecha.split("/");
-    const [hh, mm, ss] = hora.split(":");
-
-    // Nota: El mes en el constructor de Date empieza en 0 (Enero = 0)
-    return new Date(anio, mes - 1, dia, hh, mm, ss);
+    setSumadorSurcos(0);
   };
 
   useEffect(() => {
-    if (sumaSurcos > 0 && surcosIndexSele.length > 0) {
+    if (guardado) {
       GuardatAvancesEmpleado_Actividad();
+      setguardardado(false);
     }
-  }, [sumaSurcos, surcosIndexSele]);
+  }, [guardado]);
+
   const GuardatAvancesEmpleado_Actividad = () => {
     try {
       realmInstance.write(() => {
@@ -437,23 +454,15 @@ export default function ModalSurcos({
         emp.surcos = surcosIndexSele;
       });
       setSurcosIndexSele([]);
+      handleCerrarModal();
     } catch (error) {
       console.log(error);
     }
   };
 
-  const obtenerHoyCeroHoras = () => {
-    const fecha = new Date();
-
-    // Seteamos: Horas, Minutos, Segundos, Milisegundos
-    fecha.setHours(0, 0, 0, 0);
-
-    return fecha;
-  };
-
   return (
     <Modal visible={modales.modalSurcos} style={styles.modal}>
-      <View style={styles.container}>
+      <View style={[styles.container, { width: width > 600 ? "65%" : "95%" }]}>
         <View style={styles.ViewCerrar}>
           <TouchableOpacity
             style={styles.cerrarIcono}
@@ -467,7 +476,7 @@ export default function ModalSurcos({
           </TouchableOpacity>
         </View>
         {Object.keys(datosActividad).length > 0 && (
-          <View>
+          <View style={{ marginTop: 20, borderWidth: 1, padding: 10, borderRadius: 5 }}>
             <Text style={{ fontSize: 12 }}>
               {" "}
               Cod. empleado: {datosActividad.codigoEmpleado}
@@ -503,7 +512,7 @@ export default function ModalSurcos({
             </Text>
             <Text style={{ fontSize: 12 }}>
               {" "}
-              Avances: {datosActividad.avances.toFixed(2)}
+              Avances: {Number(datosActividad.avances) + sumadorDeSurcos}
             </Text>
             <Text style={{ fontSize: 12 }}>
               {" "}
@@ -511,15 +520,19 @@ export default function ModalSurcos({
             </Text>
             <Text style={{ fontSize: 12 }}>
               {" "}
-              Jornal: {datosActividad.jornal.toFixed(2)}
+              Jornal:{" "}
+              {(
+                Number(datosActividad.jornal) +
+                Number(sumadorDeSurcos) / Number(datosActividad.Rendimiento)
+              ).toFixed(2)}
             </Text>
           </View>
         )}
-        <Text style={{ fontWeight: "bold", fontSize: 18, marginTop: 20 }}>
+        <Text style={{ fontWeight: "bold", fontSize: width > 600 ? 14 : 13, marginTop: 10 }}>
           Avance
         </Text>
         {surcoDecimal === true && (
-          <View style={styles.viewAvanceDecimal}>
+          <View style={[styles.viewAvanceDecimal, { height: width > 600 ? "7%" : "6%" }]}>
             <TextInput
               value={avanceSurco}
               onChangeText={(text) => {
@@ -560,6 +573,7 @@ export default function ModalSurcos({
                   item={item}
                   onPressSurco={handlePress}
                   onLongPressSurco={handleLongPress}
+                  setSumadorSurcos={setSumadorSurcos}
                 />
               )}
               keyExtractor={(item) => item.surco.toString()}
@@ -570,7 +584,7 @@ export default function ModalSurcos({
           )}
         </View>
         <TouchableOpacity
-          style={styles.botonAgregar}
+          style={[styles.botonAgregar, { height: width > 600 ? "8%" : "%" }]}
           onPress={() => {
             guardarSurcos();
           }}

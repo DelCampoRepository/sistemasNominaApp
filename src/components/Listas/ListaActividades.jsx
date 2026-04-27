@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, Text } from "react-native";
 
 import ActividadCard from "../Cards/ActividadesCard";
 import { getRealmInstance } from "../../../realm";
-
+import {  useWindowDimensions } from 'react-native';
 const ITEM_MARGIN = 8;
 
 export default function ListaActividades({
@@ -15,7 +15,7 @@ export default function ListaActividades({
   const [realmInstance, setRealmInstance] = useState(null);
   const [activiades, setActiviades] = useState([]);
   const [codLote, setCodLote] = useState([]);
-  console.log(datos);
+   const { width } = useWindowDimensions();
   useEffect(() => {
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
@@ -37,7 +37,7 @@ export default function ListaActividades({
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>SELECCIONE ACTIVIDAD</Text>
+        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>SELECCIONE ACTIVIDAD</Text>
       </View>
       <View style={styles.container}>
         {activiades.length > 0 && (
@@ -54,7 +54,7 @@ export default function ListaActividades({
                 datosEmpleadoNuevo={datosEmpleadoNuevo}
               />
             )}
-            numColumns={3}
+            numColumns={ width > 600 ? 3 : 2}
             showsVerticalScrollIndicator={true}
             columnWrapperStyle={{
               margin: "auto",
@@ -88,4 +88,4 @@ const styles = StyleSheet.create({
   }
 });
 
-<FlatList />;
+

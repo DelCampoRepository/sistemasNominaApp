@@ -1,30 +1,30 @@
-import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
-import React, { useState, useEffect, useContext, use } from "react";
+import { StyleSheet, View, Text, Image, TouchableOpacity,ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
 import { getRealmInstance } from "../realm";
-import { Touchable } from "react-native";
+import {  useWindowDimensions } from 'react-native';
 import { Modal } from "react-native-paper";
 import { FlatList } from "react-native-gesture-handler";
+import CustomOptions from "../src/components/CustomOptions";
+import CustomTitle from "../src/components/CustomTitle";
 export default function ReporteEmpleadosScreen({ route }) {
   const [realmInstance, setRealmInstance] = useState(null);
   const [listaEmpleados, setListaEmpleados] = useState([]);
   const [ListaFinalEmp, setListaFinalEmp] = useState([]);
   const [actividadesPorEmp, setActividadesPorEmp] = useState([]);
+   const { width, height } = useWindowDimensions();
   const [actividades, setActividades] = useState([]);
-      const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [isMenuVisible, setIsMenuVisible] = useState(false);
   const {
-    numeroNave,
+   
     nombreNave,
     Descripcion,
     descripcionTabla,
     nave,
-    cantidadSurcos,
     tabla,
     codigoLote,
-    mostrarReporte,
     fechaIni,
     fechaFin
-  } =
-    route.params || {};
+  } = route.params || {};
 
   useEffect(() => {
     const inicializarRealm = async () => {
@@ -41,47 +41,6 @@ export default function ReporteEmpleadosScreen({ route }) {
     },
     [realmInstance]
   );
-
-  const buscarEmpleadoPorCodigo = async () => {
-
-    console.log(new Date(fechaIni), fechaFin)
-    
-    try {
-      const inicioDia = new Date(fechaIni);
-inicioDia.setHours(0, 0, 0, 0);
-
-const finDia = new Date(fechaFin);
-finDia.setHours(23, 59, 59, 999);
-     const listaEmpleados = realmInstance
-  .objects("EmpleadoCapturado")
-  .filtered(
-    "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND FechaCaptura >= $3  AND FechaCaptura <= $4",
-    String(codigoLote),
-    String(nave),
-    String(tabla),
-     inicioDia,
-    finDia
-  )
-
-  const empleadosPlano = JSON.parse(JSON.stringify(listaEmpleados));
-
-  
-  const empleadosUnicos = Object.values(
-  empleadosPlano.reduce((acc, emp) => {
-    acc[emp.CodigoEmpleado] = emp; // pisa duplicados
-    return acc;
-  }, {})
-);
-        
-      setListaEmpleados(empleadosUnicos);
-
-      const actividadesRealm = realmInstance.objects("Actividades");
-      setActividades(actividadesRealm);
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Del Campo y Asociados", err);
-    }
-  };
 
   useEffect(
     () => {
@@ -105,8 +64,51 @@ finDia.setHours(23, 59, 59, 999);
     [actividades, listaEmpleados]
   );
 
+  useEffect(() =>{
+ 
+  },[actividadesPorEmp])
+ 
 
-  const buscarActividadesEmpleado = (item) =>{
+const buscarEmpleadoPorCodigo = async () => {
+
+    console.log(new Date(fechaIni), fechaFin)
+    
+    try {
+      const inicioDia = new Date(fechaIni);
+inicioDia.setHours(0, 0, 0, 0);
+
+const finDia = new Date(fechaFin);
+finDia.setHours(23, 59, 59, 999);
+     const listaEmpleados = realmInstance
+  .objects("EmpleadoCapturado")
+  .filtered(
+    "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND FechaCaptura >= $3  AND FechaCaptura <= $4",
+    String(codigoLote),
+    String(nave),
+    String(tabla),
+     inicioDia,
+    finDia
+  )
+
+  const empleadosPlano = JSON.parse(JSON.stringify(listaEmpleados));
+  const empleadosUnicos = Object.values(
+  empleadosPlano.reduce((acc, emp) => {
+    acc[emp.CodigoEmpleado] = emp; // pisa duplicados
+    return acc;
+  }, {})
+);
+        
+      setListaEmpleados(empleadosUnicos);
+
+      const actividadesRealm = realmInstance.objects("Actividades");
+      setActividades(actividadesRealm);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Del Campo y Asociados", err);
+    }
+  };
+
+const buscarActividadesEmpleado = (item) =>{
 
     
     try{
@@ -154,15 +156,12 @@ finDia.setHours(23, 59, 59, 999);
     }
   }
 
-  const formatFecha =(fecha) =>{
+const formatFecha =(fecha) =>{
 
     return  fecha.substring(0, 10).split('-').reverse().join('/');
   }
 
-  useEffect(() =>{
- 
-  },[actividadesPorEmp])
- 
+  
 
 const renderIntem = ({ item }) => (
   <View
@@ -188,6 +187,7 @@ const renderIntem = ({ item }) => (
 
   return (
     <View style={styles.container}>
+       <CustomTitle title="- Reporte por empleados -" />
       <View style={styles.infoSuperior}>
         <Text style={styles.infoText}>
           {codigoLote} - {Descripcion}
@@ -204,22 +204,22 @@ const renderIntem = ({ item }) => (
         <Text style={styles.infoText}>
           Fecha Final: {formatFecha(fechaFin)}
         </Text>
-        <View style={styles.rowInfo}>
-          <Text style={styles.rendimiento2} />
-          <Text style={styles.fecha} />
-        </View>
-        <View style={styles.rowInfo} />
+       
+      
       </View>
-      <View style={{ width: "100%", height: "*83%", flex: 1 }}>
+      <View style={{ width: "100%",height:"70%"}}>
         <View
           style={{
-            flex: 1,
+             height:"100%",
             display: "flex",
             width: "100%",
-            alignItems: "center"
+            alignItems: "center",
+            zIndex: -1,
+           
           }}
         >
-          {ListaFinalEmp &&
+         <ScrollView style={{width:"100%"}} contentContainerStyle={{alignItems:"center", paddingBottom: 50}}>
+           {ListaFinalEmp &&
             ListaFinalEmp.map(empleado =>
               <TouchableOpacity
                 key={`${empleado.CodigoActividad}-${empleado.CodigoAvance}-${empleado.CodigoEmpleado}`}
@@ -276,7 +276,9 @@ const renderIntem = ({ item }) => (
                 </View>
               </TouchableOpacity>
             )}
+         </ScrollView>
         </View>
+           
       </View>
       <Modal visible={isMenuVisible}>
         <View style={{
@@ -440,7 +442,8 @@ const renderIntem = ({ item }) => (
                         </View>
                       </View>
                       </Modal>
-                    </View>
+       <CustomOptions visible={false}/>
+      </View>
   );
 }
 
@@ -448,17 +451,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f0fff0",
-    padding: 3
+    padding: 3,
+    zIndex: -2,
+      alignItems: "center",
   },
 
   botonContainer: { marginTop: 10 },
 
   infoSuperior: {
+    width: "100%",
     padding: 10,
     backgroundColor: "#B3E0B3",
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
-    height: "14%"
+    height: "16%",
+    
   },
   infoText: {
     fontSize: 14,
@@ -473,7 +480,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     color: "#333",
     marginRight: 50,
-    marginTop: -3
+   
   },
   unidad: {
     fontSize: 14,

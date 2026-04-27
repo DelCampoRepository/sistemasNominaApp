@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, Text } from "react-native";
 import ActividadEmpleadoCard from "../Cards/ActividadEmpleadoCard";
 import { getRealmInstance } from "../../../realm";
 import { Dimensions } from "react-native";
-
+import {  useWindowDimensions } from 'react-native';
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 0;
 
@@ -14,6 +14,8 @@ export default function ListaActividadesAgregadasEmpleado({
   setDatosActividad,
   datosActividad
 }) {
+  
+     const { width } = useWindowDimensions();
   const [realmInstance, setRealmInstance] = useState(null);
   const [activiades, setActiviades] = useState([]);
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function ListaActividadesAgregadasEmpleado({
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>ACTIVIDADES DEL EMPLEADO</Text>
+        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>ACTIVIDADES DEL EMPLEADO</Text>
       </View>
       <View style={styles.container}>
         {activiades.length > 0 && (
@@ -67,7 +69,7 @@ export default function ListaActividadesAgregadasEmpleado({
                 realmInstance={realmInstance}
               />
             )}
-            numColumns={SCREEN_WIDTH <= 610 ? 2 : 3}
+            numColumns={width > 400 ? 3 : 2}
             showsVerticalScrollIndicator={true}
             columnWrapperStyle={{
               margin: "auto",

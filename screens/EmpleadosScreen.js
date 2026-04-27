@@ -91,7 +91,7 @@ const EmpleadosScreen = ({ route }) => {
     horaInicioActividad: "",
     horaFinalActividad: "",
     limiteMaximoDeCaptura: "",
-    tienePermiso: true,
+    tienePermiso: false,
     solicitoPermiso: false,
     Avances: 0.0,
     rendimientoApli: 0.0,
@@ -328,7 +328,7 @@ useEffect(
             horaInicioActividad: null,
             horaFinalActividad: obtenerFechaFormateada(),
             limiteMaximoDeCaptura: null,
-            tienePermiso: true,
+            tienePermiso: false,
             solicitoPermiso: false,
             Avances: 0.0,
             rendimientoApli: Rendimiento,
@@ -390,14 +390,15 @@ useEffect(
     //para ello debo recorrero el objeto surcos modal , ver cuales son los que  tiene su clave seleccionado en true  y
     //tomar la clave surco y su valor asignarselo al empleado seleccionado y guardarlo en la base de datos realm
     setMostrarModalAvances(false);
+    
     realmInstance.write(() => {
       const sync = realmInstance.objectForPrimaryKey("Sincronizar", 0);
       if (sync) {
         sync.sincronizado = true;
       }
     });
-      setTerminaLoad(false);
 
+      setTerminaLoad(false);
         guardarSurcosEnRealm();
        
       }

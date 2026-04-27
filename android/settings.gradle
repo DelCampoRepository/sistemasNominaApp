@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'sistema-nomina-app'
+rootProject.name = 'Actividades'
 
 dependencyResolutionManagement {
   versionCatalogs {

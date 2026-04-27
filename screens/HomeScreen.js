@@ -1,43 +1,45 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, Alert } from 'react-native';
-import lista from '../assets/lista.png';
 import { useNavigation } from '@react-navigation/native';
-import localStorage from '../utils/localStorage';
 import reportes from '../assets/reportes.png';
 import cargar from '../assets/cargar.png';
 import porEmpleado from '../assets/inmigracion.png'
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import {  useWindowDimensions } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
 export default function HomeScreen()
  {
-        console.log(new Date())
+   
     const navigation = useNavigation();
     const [nombreUsuario, setNombreUsuario] = useState('');
- const [estadoSinc, setEstadoSinc] = useState(false);
-    useEffect(() => {
-        cargarNombreUsuario();
-    }, []);
-
-     useEffect(() =>{
+    const [estadoSinc, setEstadoSinc] = useState(false);
+   
+    const { width, height } = useWindowDimensions();
     
-  },[realmInstance])
+    useEffect(
+        () => {
+        cargarNombreUsuario();
+        
+    }, []);
 
     useFocusEffect(
       useCallback(
         () => {
             try{
+               
             if(realmInstance !== null)
                 {
                   const sync = realmInstance.objectForPrimaryKey("Sincronizar", 0);
                 
                   const estaSincronizado = sync?.sincronizado ?? false;
-                  console.log(estaSincronizado,'el estado')
+                 
                   setEstadoSinc(estaSincronizado);
                 }
             }catch(error){
               
-        
+
             }
         },
         [realmInstance]
@@ -45,9 +47,8 @@ export default function HomeScreen()
     );
   
     const getUserData = async () => {
-        const userData = await localStorage.get("USER_DATA");
-        return userData ? JSON.parse(userData) : null;
-
+        const result = realmInstance.objects("UserData")[0];
+        return result;
 
     };
 
@@ -57,9 +58,10 @@ export default function HomeScreen()
 
     const cargarNombreUsuario = async () => {
         const userData = await getUserData();
-        if (userData?.Nombre) {
+        
+        if (userData?.nombre) {
 
-            const nombreFormateado = userData.Nombre
+            const nombreFormateado = userData.nombre
                 .toLowerCase()
                 .split(' ')
                 .map(p => p.charAt(0).toUpperCase() + p.slice(1))
@@ -67,7 +69,8 @@ export default function HomeScreen()
             setNombreUsuario(nombreFormateado);
         }
     };
-  const GenerarFecha = () => {
+
+    const GenerarFecha = () => {
     //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
     const ahora = new Date();
 
@@ -78,7 +81,8 @@ export default function HomeScreen()
 
     let fechaFormateada = `${dia}/${mes}/${año}`;
     return fechaFormateada;
-  };
+    };
+
     const confirmarCerrarSesion = () => {
         Alert.alert(
             'Cerrar Sesión',
@@ -97,102 +101,110 @@ export default function HomeScreen()
     };
 
     return (
-      <SafeAreaView style={{ backgroundColor: "red",
-    flex: 1,}}>
-          <View style={styles.container}>
-            <View style={{ padding: 10 }}>
-                <View style={styles.headerContainer}>
-                    <View style={styles.tituloContainer}>
-                        <Text style={styles.bienvenidoText}>Bienvenido</Text>
-                        {nombreUsuario !== '' && (
-                            <Text style={styles.nombreUsuarioText}>{nombreUsuario}</Text>
-                        )}
-                         <Text style={styles.fecha}>{GenerarFecha()}</Text>
-                    </View>
-
-                    <View style={styles.logoutContainer}>
-                        <TouchableOpacity onPress={confirmarCerrarSesion}>
-                            <Image source={require('../assets/cerrars.png')}
-                                style={{ width:50, height: 48 }}
-                                resizeMode='contain' />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.logoCenter}>
-                    <Image source={require('../assets/logo.png')}
-                        style={[styles.logoImage, {
-                            elevation: 15,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 3.84
-                        }]}
-                        resizeMode='contain' />
-                </View>
-            </View>
-
-            <View style={styles.containerView}>
-               
-                <View style={{display:"flex",alignItems:"center", justifyContent:'center', flexDirection:'row', backgroundColor:'',width:'100%',height:"50%"}}>
-                    <TouchableOpacity style={styles.cardPequeño} onPress={() =>navigation.navigate('ListaEmpleados')}>
-                        <View style={styles.cardContent}>
-                     
-                                <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
-                                    <Image source={porEmpleado} resizeMode='contain'
-                                    style={{ width:"90%", height: "90%" }} />
-                                </View>
-                                <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
-                                    <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
-                                   Act. por empleado
-                                </Text>
-                                </View>
-                            </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => navigation.navigate('Reportes')} style={styles.card}>
-                        
-                            <View style={styles.cardContent}>
-                                <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
-                                    <Image source={reportes} resizeMode='contain'
-                                    style={{ width:"90%", height: "90%",left:10 }} />
-                                </View>
-                                <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
-                                    <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
-                                   Reportes
-                                </Text>
-                                </View>
-                            </View>
-                    
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+                <Text style={styles.headerText}>Bienvenido</Text> 
+                {
+                    nombreUsuario !== '' && (<Text style={styles.simpleText}>{nombreUsuario}</Text>)
+                }
+                
+                <Text style={styles.simpleText}>{GenerarFecha()}</Text>
+                
+                {/*Icono Salir */}
+                <View style={styles.logoutContainer}>
+                    <TouchableOpacity onPress={confirmarCerrarSesion}>
+                        <Image 
+                            source={require('../assets/cerrars.png')}
+                            style={{ width:50, height: 48 }}
+                            resizeMode='contain' 
+                        />
                     </TouchableOpacity>
                 </View>
 
-                  <View style={{ width:'100%',height:'50%', display:"flex",flexDirection:'row', justifyContent:'center'}}>
-                     
-                    
-                      <TouchableOpacity style={styles.cardPequeño} onPress={handleSincronizar}>
-                        <View style={styles.cardContent}>
-                            {estadoSinc &&
-                            <Image
-                                source={require("../assets/sync-circle.png")}
-                                style={styles.checkIcon}
-                            />
-        }
-                                <View style={{width:"100%",height:'80%', alignItems:'center', justifyContent:"center", display:'flex'}}>
-                                    <Image source={cargar} resizeMode='contain'
-                                    style={{ width:"90%", height: "90%" }} />
-                                </View>
-                                <View style={{width:"100%",height:'20%',alignItems:'center', justifyContent:'center',display:'flex'}}>
-                                    <Text style={{ color: "grey", fontWeight: "bold",  marginBottom:5}}>
-                                   Sincronizar
-                                </Text>
-                                </View>
-                            </View>
-                    </TouchableOpacity>
-                    
-                  </View>
-             
-            </View>
+                
         </View>
+        <View>
+            <View style={styles.logoContainer}>
+                <Image 
+                    source={require('../assets/logo.png')}
+                    style={{width: width >600 ? '40%' : '30%', height: height > 600 ? '80%' : '60%'}}
+                    resizeMode='contain' 
+                />
+            </View>
+                    
+                
+        </View>
+        <View style={[styles.buttonContainer,{marginTop: width > 600 ? "20%" : "10%"}]}>
+            <TouchableOpacity 
+                style={[styles.cardPequeño, { width: width > 600 ? "30%" : "40%",height:width > 600 ? "90%" : "90%",}]} 
+                onPress={() =>navigation.navigate('ListaEmpleados')}
+            >
+                <View >
+                   
+                    <View style={styles.buttonImageContainer}>
+                        
+                        <Image 
+                            source={porEmpleado}
+                            resizeMode='contain'
+                            style={styles.buttonImage} 
+                        />
+                        
+                        <Text style={styles.buttonText}>
+                           Act. por empleado
+                        </Text>
+                    </View>
+                </View>       
+            </TouchableOpacity>   
+            <TouchableOpacity 
+                 style={[styles.cardPequeño, { width: width > 600 ? "30%" : "40%",height:width > 600 ? "90%" : "90%",}]} 
+                onPress={() => navigation.navigate('Reportes')}>
+                    <View style={{flexDirection:"row"}}>
+                    
+                    <View style={styles.buttonImageContainer}>
+                        
+                        <Image 
+                            source={reportes} 
+                            resizeMode='contain'
+                            style={styles.buttonImage} 
+                        />
+                        
+                        <Text style={styles.buttonText}>
+                           Reportes
+                        </Text>
+                    </View>
+                </View>   
+                         
+            </TouchableOpacity>   
+        </View> 
+         
+        <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.cardPequeño, { width: width > 600 ? "30%" : "40%",height:width > 600 ? "90%" : "90%",}]} 
+              onPress={handleSincronizar}
+              >
+                <View style={{flexDirection:"row"}}>
+                    {estadoSinc &&
+                        <Image
+                            source={require("../assets/sync-circle.png")}
+                            style={styles.checkIcon}
+                        />
+                    }
+                    <View style={styles.buttonImageContainer}>
+                        
+                        <Image 
+                            source={cargar} 
+                            resizeMode='contain'
+                            style={styles.buttonImage} 
+                        />
+                        
+                        <Text style={styles.buttonText}>
+                            Sincronizar
+                        </Text>
+                    </View>
+                </View>   
+            </TouchableOpacity>
+        </View>
+        
       </SafeAreaView>
     );
  
@@ -217,117 +229,103 @@ export default function HomeScreen()
  */
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea:{ 
+        
         flex: 1,
         backgroundColor: '#f0fff0',
-        width: '100%',
     },
-    headerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    tituloContainer: {
-        justifyContent: "space-between",
-        flexDirection: "column",
-        padding: 10,
-        borderRadius: 10,
-        margin: 10
-    },
-    bienvenidoText: {
-        fontSize: 25,
-        fontWeight: 'bold',
-        color: "grey"
-    },
-     checkIcon: {
-    width: 30,
-    height: 30,
-    position: "absolute",
-    top: -8,
-    right: -5,
+   header:{
+    backgroundColor:'',
+    paddingTop:10,
+    paddingBottom:10,
+    paddingHorizontal:20,
     
-  },
-    fecha: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: "grey",
-        marginTop: 5,
-        paddingLeft:2
-    },
-    nombreUsuarioText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: "grey",
-        marginTop: 5
-    },
+   },
+   headerText:{
+    fontFamily:'bold',
+    fontSize:24,
+    
+   },
+   simpleText:{
+    fontSize:16,
+    color:'grey',
+    
+
+   },
     logoutContainer: {
         backgroundColor: 'white',
         padding: 10,
         borderRadius: 20,
-        margin: 15,
-        elevation: 5
-    },
-    logoCenter: {
-        flexDirection: 'row',
+        top: 15,
+        right: 15,
+        position: 'absolute',
+        elevation: 5,
+        width: 60,
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 35,
     },
-    logoImage: {
-        width: 200,
-        height: 200
-    },
-    containerView: {
-        flex: 1,
-       
-        padding: 0,
-        marginBottom: 10,
-        marginTop: 10,
-     
-    },
-    botonesContainer: {
-       
-     
-    },
-    card: {
-        width: "30%",
-        height:"50%",
-        backgroundColor: 'white',
-        margin:20,
-        borderRadius: 20,
-        elevation: 5,
-       
-      
-    },
-    cardGrande: {
+    logoContainer: {
+       backgroundColor: '',    
+        width: '100%',
+        height: 200,
+        marginTop: 30,
         
-        width: "30%",
-        backgroundColor: 'white',
-       
-       
-        borderRadius: 25,
-      
-        elevation: 5,
         alignItems: 'center',
-        
+       
+    },
+    logo: {
+        width: '40%',
+        height: '80%'
     },
     cardPequeño: {
-      width: "30%",
-      height:"50%",
-      backgroundColor: 'white',
-        margin:20,
+     backgroundColor: 'white', 
       borderRadius: 20,
-        elevation: 5,
-       
+      elevation: 5, 
+      marginHorizontal:'auto',
+    
     },
-    cardContent: {
-        flexDirection: 'column',
-        
-       
+    buttonContainer:{
+        backgroundColor:"", 
+        flexDirection:'row',
+         width:"100%" , 
+         height:"20%", 
+         marginTop:30
         
     },
-     cardContentSinc: {
-       
-    }
+    buttonImageContainer:{
+        width:"100%",
+        height:'100%', 
+        backgroundColor:'',
+        display:'flex'
+    },
+    buttonText:{
+        color: "grey", 
+        fontWeight: "bold",  
+        marginHorizontal:'auto',
+        paddingBottom:10
+    },
+    buttonImage:{ 
+        width:"70%", 
+        height: "70%",
+        margin:'auto' 
+    },botonTablas: {
+    position: "absolute",
+    bottom: 0,
+    left: 50,
+    backgroundColor: "green",
+    borderRadius: 40,
+    width: 66,
+    height: 66,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10
+  }
+    
 });
 

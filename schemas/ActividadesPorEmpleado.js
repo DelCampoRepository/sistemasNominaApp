@@ -52,7 +52,21 @@ export const ActividadesPorEmpleadoSchema = {
     NomCompletoUnidad: "string",
     tieneSurcos: { type: "bool", default: false },
     tablaLabel: "string",
-    jornal: "float"
+    jornal: "float",
+     estado: {
+      type: "int",
+      default:0,
+      optional: true
+    }, semana: {
+      type: "int",
+      default:0,
+      optional: true
+    },
+    horasMaximasDeCaptura: {
+      type: "int",
+      default:0,
+      optional: true
+    }
   }
 };
 

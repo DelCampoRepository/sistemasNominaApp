@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
 import EmpleadoCard from "../Cards/EmpleadoCard";
-
+import {  useWindowDimensions } from 'react-native';
 export default function ListaEmpleadosAgregados({
   listaEmpleados,
   setModales,
@@ -9,6 +9,9 @@ export default function ListaEmpleadosAgregados({
   modales,
   setDatosEmpleadoNuevo
 }) {
+
+    const { width, height } = useWindowDimensions();
+
   return (
     <View style={styles.mainContainer}>
       <FlatList
@@ -23,11 +26,11 @@ export default function ListaEmpleadosAgregados({
             setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
           />
         )}
-        numColumns={3}
+        numColumns={width > 600 ? 3 : 2}
         showsVerticalScrollIndicator={true}
         columnWrapperStyle={{
           margin: "auto",
-          marginTop: 40,
+          marginTop: 0,
           paddingHorizontal: 7
         }}
       />
@@ -37,7 +40,10 @@ export default function ListaEmpleadosAgregados({
 
 const styles = StyleSheet.create({
   mainContainer: {
-    flex: 1,
+    
+    width: "100%",
+    height: "86.8%",
+    
     zIndex: -1
   }
 });

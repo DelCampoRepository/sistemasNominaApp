@@ -1,22 +1,20 @@
-import React, { use, useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert
+  
 } from "react-native";
 import { getRealmInstance } from "../realm";
-import { toDate } from "date-fns";
-
+import CustomOptions from "../src/components/CustomOptions";
+import CustomTitle from "../src/components/CustomTitle";
 //Funcion que pintara el surco si esta trabajado o no
 const ListaSurcos = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [realmInstance, setRealmInstance] = useState(null);
   const [surcosTrabajados, setSurcostrabajado] = useState(null);
+  
   const {
     CodigoLote,
     CodigoNave,
@@ -62,7 +60,7 @@ const ListaSurcos = ({ route, navigation }) => {
           new Date(fechaFin)
         );
 
-        console.log(fechaIni, fechaFin);
+       
        
         const surcosTrabajados = new Set();
         emp.forEach(empleado => {
@@ -118,14 +116,7 @@ const ListaSurcos = ({ route, navigation }) => {
     );
   };
 
-  const formatearFecha = fecha => {
-    if (!fecha) return "";
-    const day = String(fecha.getDate()).padStart(2, "0");
-    const month = String(fecha.getMonth() + 1).padStart(2, "0");
-    const year = fecha.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
+ 
   const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
     const ahora = new Date();
 
@@ -149,7 +140,9 @@ const ListaSurcos = ({ route, navigation }) => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+
+    <View style={{ flex: 1, backgroundColor: "#f0fff0", zIndex: -2, alignItems: "center" }}>
+        <CustomTitle title="- Surcos trabajados -" />
       <View style={styles.header}>
         <Text style={styles.headerText}>
           {CodigoLote}
@@ -177,7 +170,7 @@ const ListaSurcos = ({ route, navigation }) => {
         </Text>
       </View>
 
-      <View style={{ flex: 1, backgroundColor: "#f0fff0" }}>
+      <View style={{  backgroundColor: "#f0fff0", zIndex: -2 , width: "100%", height:"61%"}}>
         <FlatList
           data={surcosFill}
           keyExtractor={item => item.numSurco.toString()}
@@ -198,6 +191,7 @@ const ListaSurcos = ({ route, navigation }) => {
           showsVerticalScrollIndicator={true}
         />
       </View>
+       <CustomOptions visible={false}/>
     </View>
   );
 };
@@ -207,7 +201,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#B3E0B3",
     paddingHorizontal: 10,
     paddingTop: 15,
-    paddingBottom: 10
+    paddingBottom: 10,
+    width: "100%", 
+    height:"25%",
   },
   headerText: {
     color: "#333",

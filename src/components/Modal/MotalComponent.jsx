@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import ListaActividades from "../Listas/ListaActividades";
 import ListaTablas from "../Listas/ListaTablas";
 import ListaActividadesAgregadasEmpleado from "../Listas/ListaActividadesAgregadasEmpleado";
-
+import {  useWindowDimensions } from 'react-native';
 export default function CustomModal({
   modales,
   setModales,
@@ -24,6 +24,8 @@ export default function CustomModal({
     avance: ""
   });
 
+ 
+const { width, height } = useWindowDimensions();
   return (
     <Modal
       visible={modales.mainModal}
@@ -49,14 +51,52 @@ export default function CustomModal({
           >
             <Image
               source={require("../../../assets/cerraar.png")}
-              style={{ width: 30, height: 30 }}
+              style={{ width: width > 600 ? 30 : 25, height: width > 600 ? 30 : 25 }}
               resizeMode="contain"
             />
           </TouchableOpacity>
+          { modales.modalNave === false && modales.modalActiviadesEmpleado === false &&
+          <TouchableOpacity
+            style={styles.regresar}
+            onPress={() =>
+            {
+               if(modales.modalTablas)
+               {
+                   setModales((prev) => ({
+                  ...prev,
+                  modalNave: true,
+                  modalEmpleados: false,
+                  modalActividades: false,
+                  mainModal: true,
+                  modalTablas: false,
+                  modalActiviadesEmpleado: false
+                }))
+               }
+               else if(modales.modalActividades)
+               {
+                   setModales((prev) => ({
+                  ...prev,
+                  modalNave: false,
+                  modalEmpleados: false,
+                  modalActividades: false,
+                  mainModal: true,
+                  modalTablas: true,
+                  modalActiviadesEmpleado: false
+                }))
+               }
+            
+            }}
+          >
+            <Image
+              source={require("../../../assets/regreso.png")}
+              style={{ width: 30, height: 30 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>}
         </View>
 
         <View style={styles.cardContainer}>
-          {modales.modalNave === true && (
+          { modales.modalNave === true && (
             <ListaNaves
               setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
               setModales={setModales}
@@ -97,7 +137,9 @@ export default function CustomModal({
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: "#ffffff00"
+    backgroundColor: "#ffffff00",
+    elevation: 5,
+    zIndex: 100
   },
   modalPop: {
     width: "90%",
@@ -121,5 +163,17 @@ const styles = StyleSheet.create({
     display: "flex",
     alignItems: "flex-end",
     justifyContent: "center"
+  },
+  cerrarIcono: {
+    position: "absolute",
+    
+    right: 10,
+    zIndex: 1
+  },
+  regresar: {
+    position: "absolute",
+  
+    left: 20,
+    zIndex: 1
   }
 });

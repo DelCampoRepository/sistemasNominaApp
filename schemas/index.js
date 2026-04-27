@@ -18,6 +18,7 @@ import { Sincronizar } from "./SincronizarState";
 import { SurcoDecimalSchema } from "./surcosConDecimal";
 import { ActividadesPorEmpleadoSchema } from "./ActividadesPorEmpleado";
 import { SurcoAvanceSchema } from "./SurcoAvanceSchema";
+import { CredencialesSchema } from "./CredencialesSchema";
 //importa nave schema
 
 export const schemas = [
@@ -40,5 +41,7 @@ export const schemas = [
   Sincronizar,
   SurcoDecimalSchema,
   ActividadesPorEmpleadoSchema,
-  SurcoAvanceSchema
+  SurcoAvanceSchema,
+  CredencialesSchema
+
 ];

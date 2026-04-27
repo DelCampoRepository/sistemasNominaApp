@@ -9,7 +9,8 @@ import {
   Alert
 } from "react-native";
 import { Dimensions } from "react-native";
-
+import {  useWindowDimensions } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 7;
 
@@ -25,13 +26,17 @@ export default function ActividadEmpleadoCard({
   datosActividad,
   realmInstance
 }) {
+
+  const { width } = useWindowDimensions();
+     const   iconSize = width > 600 ? 45 : 30; // Ajusta el tamaño del ícono según el ancho de la pantalla
   const [seleccion, setSeleccion] = useState({
     acIni: true,
     actFin: true
   });
-  //console.log("item", JSON.stringify(item, null, 2));
-  // console.log(item.horaInicioActividad);
+ 
+  //console.log(item.horaInicioActividad);
   useEffect(() => {}, [item]);
+
   const obtenerFechaYHora = () => {
     const ahora = new Date();
 
@@ -54,8 +59,8 @@ export default function ActividadEmpleadoCard({
 
   const handleOnPress = () => {
     // console.log(JSON.stringify(item, null, 2));
-
-    if (item.solicitoPermiso) {
+     
+    if (item.solicitoPermiso ) {
       Alert.alert(
         "Del campo y asociados",
         "Esperando aprobación  de solicitud; recuerde sincronizar para mandar el permiso!"
@@ -64,7 +69,7 @@ export default function ActividadEmpleadoCard({
     }
     if (
       item.limiteMaximoDeCaptura !== null &&
-      new Date() > new Date(item.limiteMaximoDeCaptura)
+      new Date().getTime() > new Date(item.limiteMaximoDeCaptura).getTime() && !item.solicitarPermiso
     ) {
       Alert.alert(
         "Del campo y Asociados",
@@ -102,6 +107,7 @@ export default function ActividadEmpleadoCard({
       }));
     }
   };
+  
   const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
     //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
     const ahora = new Date();
@@ -120,7 +126,8 @@ export default function ActividadEmpleadoCard({
     if (SoloFecha) {
       fechaFormateada = `${año}-${mes}-${dia}`;
     } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra ? Number(minutos) + Number(2) : minutos}:${segundos}`;
+      fechaFormateada = `${año}-${mes}-${dia} ${horaExtra ? Number(horas) + Number(item.horasMaximasDeCaptura) : horas}:${minutos}:${segundos}`;
+     //fechaFormateada = `${año}-${mes}-${dia} ${horas }:${horaExtra? Number(minutos) + Number(1) : minutos}:${segundos}`;
     }
     return fechaFormateada;
   };
@@ -329,8 +336,8 @@ export default function ActividadEmpleadoCard({
           codigoTabla: item.codigoTabla,
           fecha: item.fecha,
           horaInicioActividad: item.horaInicioActividad,
-          horaFinalActividad: new Date(GenerarFecha(false, false)),
-          limiteMaximoDeCaptura: new Date(GenerarFecha(true, false)),
+          horaFinalActividad: item.horaFinalActividad,
+          limiteMaximoDeCaptura: item.limiteMaximoDeCaptura,
           CodigoUsuario: item.CodigoUsuario,
           CodigoCultivo: item.CodigoCultivo,
           CodigoActividad: item.CodigoActividad,
@@ -387,7 +394,14 @@ export default function ActividadEmpleadoCard({
       Alert.alert("", error);
     }
   };
+ function validarBloquead()
+ {
+   if(item.limiteMaximoDeCaptura !== null &&
+      new Date().getTime() > new Date(item.limiteMaximoDeCaptura).getTime() && !item.solicitarPermiso)
+      return true;
 
+     return false;
+ }
   function convertir(fechaItem) {
     const fecha = new Date(fechaItem);
 
@@ -402,7 +416,15 @@ export default function ActividadEmpleadoCard({
     return `${horas}:${minutos} ${ampm}`;
   }
   return (
-    <TouchableOpacity style={styles.Card} onPress={handleOnPress}>
+    <TouchableOpacity 
+    style={[styles.Card,{
+        backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d", 
+         borderColor: item.estado ===0? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#de0202",
+        width: width > 400 ? "30%": "45%"
+      }]} 
+      onPress={handleOnPress}
+    >
+      {/*TIMER INICIAR PLAY ICONO */}
       {item.horaInicioActividad === null && seleccion.acIni && (
         <TouchableOpacity
           style={{
@@ -427,8 +449,9 @@ export default function ActividadEmpleadoCard({
         </TouchableOpacity>
       )}
 
-      {item.horaInicioActividad !== null &&
-        item.limiteMaximoDeCaptura === null && (
+      {/*TIMER FINALIZAR CHECK  ICONO*/}
+      { 
+        item.limiteMaximoDeCaptura === null &&  item.horaInicioActividad !== null  &&(
           <TouchableOpacity
             onPress={handleFinalzar}
             style={{
@@ -452,6 +475,48 @@ export default function ActividadEmpleadoCard({
           </TouchableOpacity>
         )}
 
+      {/*CANDADITO ICONO */}
+      {validarBloquead() &&
+        <View style={{
+           top:-30,
+           width: 60,
+           height: 60,
+           borderRadius: 55,
+           overflow: 'hidden',
+           position:"absolute",
+        }}>
+       {/* Borde bicolor */}
+          <View style={{ flex: 1, backgroundColor: item.estado ===0? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#ff4d4d" }} />
+          <View style={{ flex: 1, backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
+
+        {/* Círculo interior (el "contenido") */}
+         <View style={{
+           position: 'absolute',
+
+           top: 4,
+           left: 4,
+           width: 52,
+           height: 52,
+           borderRadius: 51,
+           overflow: 'hidden',
+         }}>
+           <View style={{ flex: 1,  backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
+           <View style={{ flex: 1, backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
+       
+           {/* Icono centrado */}
+           <View style={{
+             position: 'absolute',
+             top: 0, left: 0, right: 0, bottom: 0,
+             justifyContent: 'center',
+             alignItems: 'center',
+           }}>
+             <Ionicons name="lock-closed" size={iconSize} color="#000000" />
+           </View>
+         </View>
+        </View>
+      
+      }
+     
       <View style={styles.imageContainer}>
         <Text
           style={{
@@ -476,7 +541,7 @@ export default function ActividadEmpleadoCard({
         {item.Descripcion.trim()}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Rend. Tope: {item.RendimientoTope}
+        Rend. tope: {item.RendimientoTope}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
         Lote: {item.codigoLote}
@@ -491,24 +556,24 @@ export default function ActividadEmpleadoCard({
         Jornal:{item.jornal.toFixed(2)}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Avaces: {item.avances.toFixed(2)}
+        Avances: {item.avances.toFixed(2)}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
         Fecha captura: {obtenerFechaYHora(item.fecha)}
       </Text>
       <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Hora Inicio:{" "}
+        Hora inicio:{" "}
         {item.horaInicioActividad === null
           ? "Sin asignar"
           : convertir(item.horaInicioActividad)}
       </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Hora Fin:{" "}
+      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto", color: "black" }}>
+        Hora fin:{" "}
         {item.horaFinalActividad === null
           ? "sin asignar"
           : convertir(item.horaFinalActividad)}
       </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
+      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" , color: validarBloquead() ? "red" : "black" }}>
         Hora limite:{" "}
         {item.limiteMaximoDeCaptura !== null
           ? convertir(item.limiteMaximoDeCaptura)
@@ -520,14 +585,14 @@ export default function ActividadEmpleadoCard({
 
 const styles = StyleSheet.create({
   Card: {
-    width: ITEM_WIDTH,
+    
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 12,
     alignItems: "center",
     elevation: 3,
-    borderStartColor: "green"
+    borderWidth:3
   },
   imageContainer: {
     width: "100%",

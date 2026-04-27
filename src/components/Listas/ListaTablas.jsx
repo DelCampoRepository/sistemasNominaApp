@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, Text } from "react-native";
 
 import TablaCard from "../Cards/TablaCard";
 import { getRealmInstance } from "../../../realm";
+import {  useWindowDimensions } from 'react-native';
 
 const ITEM_MARGIN = 8;
 
@@ -23,12 +24,12 @@ export default function ListaTablas({
     setNave(datos.nave);
   }, []);
 
-  console.log("tablas", datos.nave);
+  const { width, height } = useWindowDimensions();
   useEffect(() => {
     if (realmInstance != null) {
       const listaTablas = realmInstance
         .objects("Tablas")
-        .filtered("CodigoNave ==$0", nave);
+        .filtered("CodigoNave ==$0 AND CodigoLote ==$1", nave, datos.lote);
 
       //.filtered('CodigoLote ==$0', )
       setTablas(listaTablas);
@@ -38,7 +39,7 @@ export default function ListaTablas({
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>SELECCIONE TABLA</Text>
+        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>SELECCIONE TABLA</Text>
       </View>
 
       <View style={styles.container}>
@@ -56,7 +57,7 @@ export default function ListaTablas({
                 setDatos={setDatos}
               />
             )}
-            numColumns={3}
+            numColumns={width > 600 ? 3 : 2}
             showsVerticalScrollIndicator={true}
             columnWrapperStyle={{
               margin: "auto",

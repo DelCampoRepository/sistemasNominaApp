@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, FlatList, Text } from "react-native";
-
 import NaveCard from "../Cards/NaveCard";
 import { getRealmInstance } from "../../../realm";
+import {  useWindowDimensions } from 'react-native';
 
-const ITEM_MARGIN = 8;
 
 export default function ListaNaves({
   setDatosEmpleadoNuevo,
   setModales,
   setDatos
 }) {
+
   const [realmInstance, setRealmInstance] = useState(null);
+  const { width } = useWindowDimensions();
   const [naves, setNaves] = useState([]);
   useEffect(() => {
     const inicializarRealm = async () => {
@@ -31,7 +32,7 @@ export default function ListaNaves({
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>SELECCIONE NAVE</Text>
+        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>SELECCIONE NAVE</Text>
       </View>
       <View style={styles.container}>
         {naves.length > 0 && (
@@ -50,12 +51,12 @@ export default function ListaNaves({
             showsVerticalScrollIndicator={true}
             columnWrapperStyle={{
               margin: "auto",
-              marginTop: 40,
-              paddingHorizontal: ITEM_MARGIN
+              marginTop: 40,            
             }}
           />
         )}
       </View>
+        
     </View>
   );
 }
@@ -66,7 +67,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0fff0",
     borderWidth: 0.4,
     borderColor: "#1fcb30",
-    borderRadius: 10
+    borderRadius: 10,
+    
+    display:"flex",
+    alignItems:"stretch"
+
   },
   headerContainer: {
     height: "5%",

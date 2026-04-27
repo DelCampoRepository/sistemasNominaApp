@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
 import { Dimensions } from "react-native";
-
+import {  useWindowDimensions } from 'react-native';
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 7;
 const ITEM_WIDTH = SCREEN_WIDTH / 3.7 - ITEM_MARGIN * 4;
@@ -19,6 +19,9 @@ export default function TablaCard({
   setModales,
   setDatos
 }) {
+
+   const { width } = useWindowDimensions();
+
   const handleOnPress = () => {
     setDatosEmpleadoNuevo((prev) => ({
       ...prev,
@@ -36,7 +39,7 @@ export default function TablaCard({
   };
 
   return (
-    <TouchableOpacity style={styles.Card} onPress={handleOnPress}>
+    <TouchableOpacity style={[styles.Card, { width: width > 600 ? "30%" : "44%" }]} onPress={handleOnPress}>
       <View style={styles.imageContainer}>
         <Image
           source={require("../../../assets/plantas.png")}
@@ -44,10 +47,10 @@ export default function TablaCard({
           resizeMode="contain"
         />
       </View>
-      <Text style={{ fontWeight: "bold", fontSize: 12 }}>
+      <Text style={{ fontWeight: "bold", fontSize: width > 600 ? 17 : 15}}>
         {item.CodigoTabla}
       </Text>
-      <Text style={{ fontSize: 10, textAlign: "center", margin: "auto" }}>
+      <Text style={{ fontSize: width > 600 ? 12 : 11, textAlign: "center", margin: "auto" }}>
         {item.Descripcion.trim()}
       </Text>
     </TouchableOpacity>
@@ -56,7 +59,7 @@ export default function TablaCard({
 //source={require("../../../assets/nave2.png")}
 const styles = StyleSheet.create({
   Card: {
-    width: ITEM_WIDTH,
+    
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
     borderRadius: 10,

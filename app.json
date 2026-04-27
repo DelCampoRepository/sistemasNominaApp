@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "sistema-nomina-app",
-    "slug": "sistema-nomina-app",
+    "name": "Actividades",
+    "slug": "Actividades",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -20,10 +20,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-     "package": "com.sistemanomina.app"
+      "package": "com.sistemanomina.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }

@@ -1,8 +1,13 @@
 import { SurcoSchema } from "./Surcos";
 export const EmpleadoCapSchema = {
   name: "EmpleadoCapturado",
+  primaryKey:"id",
   properties: {
-    CodigoEmpleado: "string",
+    id:"string",
+    CodigoEmpleado: {
+  type: "string",
+  indexed: true
+},
     Nombre: "string",
     CodigoTemporada: "string",
     CodigoLote: "string",
@@ -57,6 +62,11 @@ export const EmpleadoCapSchema = {
       default: []
     },
     tieneSurcos: { type: "bool", default: false },
-    estado: { type: "int", default: 0 }
+    estado: { type: "int", default: 0 },
+    semana: {
+      type: "int",
+      default:0,
+      optional: true
+    }
   }
 };

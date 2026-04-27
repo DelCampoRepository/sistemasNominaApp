@@ -5,7 +5,7 @@ import { Alert } from "react-native";
 
 export const login = async data => {
   const datacon = JSON.stringify(data);
-  console.log(datacon);
+
   const response = await fetch(`${API_URL}/Login`, {
     method: "POST",
     headers: {
@@ -22,6 +22,7 @@ export const login = async data => {
 
   return await response.json();
 };
+
 export const obtenerSemanaActiva = async () => {
   const controller = new AbortController();
   const timeOutId = setTimeout(() => controller.abort(), 5000);
@@ -105,7 +106,7 @@ export const EnviarEmpleados = async (lista, token) => {
 
   const text = await response.text();
   // console.log("🧾 BACKEND RESPUESTA:", text);
-
+  
   return response.ok ? JSON.parse(text) : null;
 };
 export const obtenerTablasPorUsuario = async (
@@ -160,22 +161,6 @@ export const obtenerActividadesPorUsuario = async (
   return await response.json();
 };
 
-export const obtenerEmpleadosPorTemporada = async (temporada, token) => {
-  const response = await fetch(`${API_URL}/Empleados/${temporada}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Error al obtener los empleados");
-  }
-
-  return await response.json();
-};
 
 export const guardarEmpleados = async (listaEmpleados, token) => {
   console.log("Enviando empleados a guardar:", listaEmpleados);

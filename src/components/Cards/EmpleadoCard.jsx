@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-  TouchableOpacity,
+ 
   View,
   Text,
   Image,
   StyleSheet,
   Pressable
 } from "react-native";
-import { Dimensions } from "react-native";
-import main from "../../..";
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
+import {  useWindowDimensions } from 'react-native';
+
 const ITEM_MARGIN = 7;
-const ITEM_WIDTH = SCREEN_WIDTH / 3.7 - ITEM_MARGIN * 4;
+
 
 export default function EmpleadoCard({
   item,
@@ -44,9 +43,13 @@ export default function EmpleadoCard({
     }));
   };
 
+   const { width } = useWindowDimensions();
   return (
     <Pressable
-      style={styles.Card}
+      style={[styles.Card,{ 
+        backgroundColor: item.estado ===0  || item.estado ===3? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d", 
+         borderColor: item.estado ===0|| item.estado ===3? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#de0202",
+        width: width > 600 ? "25%" : "40%" }]}
       onPress={handleOnPress}
       onLongPress={handleLongPress}
     >
@@ -61,20 +64,23 @@ export default function EmpleadoCard({
         {item.CodigoEmpleado}
       </Text>
       <Text style={styles.textSecundario}>{item.Nombre}</Text>
+        <Text style={styles.textSecundario}>{item.FechaCaptura}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   Card: {
-    width: ITEM_WIDTH,
+  
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 12,
     alignItems: "center",
     elevation: 3,
-    borderStartColor: "green"
+    
+    borderWidth:3,
+    borderColor:"#00eade",
   },
   imageContainer: {
     width: "100%",
@@ -90,6 +96,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     margin: "auto",
-    paddingVertical: 10
+    paddingVertical: 10,
+    
   }
 });
