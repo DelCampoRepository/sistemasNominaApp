@@ -66,7 +66,8 @@ export const ActividadesPorEmpleadoSchema = {
       type: "int",
       default:0,
       optional: true
-    }
+    },
+    dias_frecuencia_surcos:'float'
   }
 };
 

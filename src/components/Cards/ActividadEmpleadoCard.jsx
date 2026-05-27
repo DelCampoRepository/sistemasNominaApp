@@ -11,6 +11,7 @@ import {
 import { Dimensions } from "react-native";
 import {  useWindowDimensions } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
+import { ahoraTimestamp, expiracionDosHoras, finDiaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 7;
 
@@ -132,6 +133,7 @@ export default function ActividadEmpleadoCard({
     return fechaFormateada;
   };
 
+
   const handleIniciar = () => {
     realmInstance.write(() => {
       const actividad = realmInstance.objects("ActiviadesPorEmpleado").filtered(
@@ -140,16 +142,18 @@ export default function ActividadEmpleadoCard({
       codigoLote == $1 AND 
       codigoNave == $2 AND 
       codigoTabla == $3 AND 
-      fecha == $4 AND 
+      fecha >= $4 AND 
       CodigoActividad == $5 AND
-      CodigoAvance == $6`,
+      CodigoAvance == $6 AND
+      fecha <=$7`,
         item.codigoEmpleado,
         item.codigoLote,
         item.codigoNave,
         item.codigoTabla,
-        item.fecha,
+       inicioDiaCuliacan(),
         item.CodigoActividad,
-        item.CodigoAvance
+        item.CodigoAvance,
+         finDiaCuliacan()
       )[0];
 
       const data = {
@@ -193,22 +197,24 @@ export default function ActividadEmpleadoCard({
           CodigoLote == $1 AND 
           CodigoNave == $2 AND 
           CodTabla == $3 AND 
-          FechaCaptura == $4 AND 
+          FechaCaptura >= $4 AND 
           CodigoActividad == $5 AND
-          CodigoAvance == $6
+          CodigoAvance == $6 AND
+          FechaCaptura <=$7
         `,
         item.codigoEmpleado,
         item.codigoLote,
         item.codigoNave,
         item.codigoTabla,
-        item.fecha,
+        inicioDiaCuliacan(),
         item.CodigoActividad,
-        item.CodigoAvance
+        item.CodigoAvance,
+        finDiaCuliacan()
       );
 
       if (Empleado.length == 0) return;
       const emp = Empleado[0];
-      emp.horaInicioActividad = new Date();
+      emp.horaInicioActividad = ahoraTimestamp();
     });
     /*
      if (existe) {
@@ -228,16 +234,18 @@ export default function ActividadEmpleadoCard({
       codigoLote == $1 AND 
       codigoNave == $2 AND 
       codigoTabla == $3 AND 
-      fecha == $4 AND 
+      fecha >= $4 AND 
       CodigoActividad == $5 AND
-      CodigoAvance == $6`,
+      CodigoAvance == $6 AND
+      fecha <=$7`,
             item.codigoEmpleado,
             item.codigoLote,
             item.codigoNave,
             item.codigoTabla,
-            item.fecha,
+            inicioDiaCuliacan(),
             item.CodigoActividad,
-            item.CodigoAvance
+            item.CodigoAvance,
+            finDiaCuliacan()
           )[0];
 
         const data = {
@@ -248,8 +256,8 @@ export default function ActividadEmpleadoCard({
           codigoTabla: item.codigoTabla,
           fecha: item.fecha,
           horaInicioActividad: item.horaInicioActividad,
-          horaFinalActividad: new Date(GenerarFecha(false, false)),
-          limiteMaximoDeCaptura: new Date(GenerarFecha(true, false)),
+          horaFinalActividad: finDiaCuliacan(),
+          limiteMaximoDeCaptura: expiracionDosHoras() ,
           CodigoUsuario: item.CodigoUsuario,
           CodigoCultivo: item.CodigoCultivo,
           CodigoActividad: item.CodigoActividad,
@@ -281,17 +289,19 @@ export default function ActividadEmpleadoCard({
           CodigoLote == $1 AND 
           CodigoNave == $2 AND 
           CodTabla == $3 AND 
-          FechaCaptura == $4 AND 
+          FechaCaptura >= $4 AND 
           CodigoActividad == $5 AND
-          CodigoAvance == $6
+          CodigoAvance == $6 AND
+          FechaCaptura <=$7
         `,
           item.codigoEmpleado,
           item.codigoLote,
           item.codigoNave,
           item.codigoTabla,
-          item.fecha,
+          inicioDiaCuliacan(),
           item.CodigoActividad,
-          item.CodigoAvance
+          item.CodigoAvance,
+          finDiaCuliacan()
         );
 
         if (Empleado.length == 0) return;

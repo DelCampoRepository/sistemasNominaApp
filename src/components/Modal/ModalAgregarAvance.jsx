@@ -11,6 +11,7 @@ import {
 import { getRealmInstance } from "../../../realm";
 import { useEffect, useState } from "react";
 import {  useWindowDimensions } from 'react-native';
+import { finDiaCuliacan, inicioDiaAyer, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
 export default function ModalAgregarAvance({
   setModales,
   modales,
@@ -37,38 +38,16 @@ export default function ModalAgregarAvance({
     setAvance("0");
   };
 
-  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
-    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
-    const ahora = new Date();
 
-    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
-
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    let horas = String(ahora.getHours()).padStart(2, "0");
-
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-    let fechaFormateada = ``;
-
-    if (SoloFecha) {
-      fechaFormateada = `${año}-${mes}-${dia}`;
-    } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${
-        horaExtra ? Number(minutos) + Number(2) : minutos
-      }:${segundos}`;
-    }
-    return fechaFormateada;
-  };
-  //console.log(JSON.stringify(datosActividad, null, 2));
 
   useEffect(() => {
     setAvance(datosActividad.avances);
   }, [datosActividad]);
   const handleOnpress = () => {
     if (RealmInstance === null) return;
-    if (avance / datosActividad.Rendimiento > datosActividad.RendimientoTope) {
+   
+    if (( (Math.round(avance * 100) / 100) /  (Math.round(datosActividad.Rendimiento * 100) / 100)) > datosActividad.RendimientoTope) {
+
       Alert.alert(
         "Del campo y asociados",
         "avance supera el rendimineto Tope!"
@@ -84,18 +63,20 @@ export default function ModalAgregarAvance({
             CodigoAvance == $2 AND
             CodigoLote == $3 AND
             CodigoNave == $4 AND 
-            FechaCaptura == $5 AND 
-            CodTabla == $6
+            FechaCaptura >= $5 AND 
+            CodTabla == $6 AND
+            FechaCaptura <= $7 
           `,
           datosEmpleadoSeleccionado.CodigoEmpleado,
           datosActividad.CodigoActividad,
           datosActividad.CodigoAvance,
           datosActividad.codigoLote,
           datosActividad.codigoNave,
-          new Date(GenerarFecha(false, true)),
-          datosActividad.codigoTabla
+          inicioDiaCuliacan(),
+          datosActividad.codigoTabla,
+          finDiaCuliacan()
         );
-
+        console.log('encontrado',empleado, inicioDiaCuliacan(), finDiaCuliacan());
         if (empleado.length == 0) return;
 
         const emp = empleado[0];
@@ -111,16 +92,18 @@ export default function ModalAgregarAvance({
           CodigoAvance == $2 AND
           codigoLote == $3 AND
           codigoNave == $4 AND
-          fecha == $5 AND 
-          codigoTabla == $6
+          fecha >= $5 AND 
+          codigoTabla == $6 AND
+          fecha <= $7 
       `,
           datosEmpleadoSeleccionado.CodigoEmpleado,
           datosActividad.CodigoActividad,
           datosActividad.CodigoAvance,
           datosActividad.codigoLote,
           datosActividad.codigoNave,
-          new Date(GenerarFecha(false, true)),
-          datosActividad.codigoTabla
+          inicioDiaCuliacan(),
+          datosActividad.codigoTabla,
+          finDiaCuliacan()
         );
 
         if (actividadesEncontradas.length == 0) return;
@@ -187,7 +170,7 @@ export default function ModalAgregarAvance({
             </Text>
             <Text style={{ fontSize: 12 }}>
               {" "}
-              Rend. aplicado: {datosActividad.Rendimiento}
+              Rend. aplicado: {datosActividad.Rendimiento.toFixed(2)}
             </Text>
             <Text style={{ fontSize: 12 }}>
               {" "}

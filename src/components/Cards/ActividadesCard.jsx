@@ -12,6 +12,7 @@ import { Dimensions } from "react-native";
 import {  useWindowDimensions } from 'react-native';
 import { exportarRealmAJSON } from "../../../utils/CreadorArchivos";
 import { id } from "date-fns/locale";
+import { ahoraTimestamp, finDiaCuliacan, formatearFechaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 7;
 const ITEM_WIDTH = SCREEN_WIDTH / 3.7 - ITEM_MARGIN * 4;
@@ -37,7 +38,7 @@ export default function ActividadCard({
         async function  guardado() {
              
           await GuardarEmpleadoCapturado();
-         await GuardarActividadEmpleado();
+         
           
           setSeleccion(false);
         }
@@ -49,6 +50,7 @@ export default function ActividadCard({
   }, [seleccion]);
  useEffect(()=>{
   revisarSiTieneActividadAsignada();
+ 
   function revisarSiTieneActividadAsignada(){
     try {
       const ActividadesRepetidas = realmInstance
@@ -61,15 +63,17 @@ export default function ActividadCard({
           codigoTabla ==$3  AND
           CodigoActividad ==$4  AND
           CodigoAvance ==$5 AND 
-          fecha ==$6
-      `,
+          fecha >=$6 AND
+          fecha <=$7
+       `,
           ActividaEmpleado.codigoEmpleado,
           ActividaEmpleado.codigoLote,
           ActividaEmpleado.codigoNave,
           ActividaEmpleado.codigoTabla,
           item.CodigoActividad,
           item.CodigoAvance,
-          new Date(GenerarFecha(false, true))
+          inicioDiaCuliacan(),
+          finDiaCuliacan()
         );
 
       if (ActividadesRepetidas.length > 0) {
@@ -83,57 +87,8 @@ export default function ActividadCard({
   }
  }, [])
 
-  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
-    //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
-    const ahora = new Date();
 
-    //if (horaExtra) ahora.setHours(ahora.() + limiteMaximoCaptura);
-
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    let horas = String(ahora.getHours()).padStart(2, "0");
-
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-    let fechaFormateada = ``;
-
-    if (SoloFecha) {
-      fechaFormateada = `${año}-${mes}-${dia}`;
-    } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra ? Number(minutos) + Number(2) : minutos}:${segundos}`;
-    }
-    return fechaFormateada;
-  };
-  const obtenerFechaFormateada = () => {
-    const ahora = new Date();
-
-    // 1️⃣ Crear fecha local plana (sin conversión de zona)
-    const fechaLocalPlana = new Date(
-      ahora.getFullYear(),
-      ahora.getMonth(),
-      ahora.getDate(),
-      23,
-      59,
-      59,
-      999
-    );
-
-    // 2️⃣ Convertir a UTC manteniendo la hora plana
-    const fechaFinDiaLocalSinUTC = new Date(
-      Date.UTC(
-        fechaLocalPlana.getFullYear(),
-        fechaLocalPlana.getMonth(),
-        fechaLocalPlana.getDate(),
-        fechaLocalPlana.getHours(),
-        fechaLocalPlana.getMinutes(),
-        fechaLocalPlana.getSeconds(),
-        fechaLocalPlana.getMilliseconds()
-      )
-    );
-
-    return fechaFinDiaLocalSinUTC;
-  };
+ 
 
   const handleOnPress = () => {
   
@@ -141,9 +96,8 @@ export default function ActividadCard({
      
     const userData = realmInstance.objects("UserData");
      
-      const fechaCaptura =
-    new Date(GenerarFecha(false, true));
-    const id = `${datosEmpleadoNuevo.CodigoEmpleado}-${datosEmpleadoNuevo.CodigoLote}-${datosEmpleadoNuevo.CodigoNave}-${datosEmpleadoNuevo.CodTabla}-${item.CodigoActividad}-${item.CodigoAvance}-${ fechaCaptura.getTime()}`;
+      const fechaCaptura =inicioDiaCuliacan()
+    const id = `${datosEmpleadoNuevo.CodigoEmpleado}-${datosEmpleadoNuevo.CodigoLote}-${datosEmpleadoNuevo.CodigoNave}-${datosEmpleadoNuevo.CodTabla}-${item.CodigoActividad}-${item.CodigoAvance}-${ fechaCaptura.toLocaleDateString()}`;
  
   
     setDatosEmpleadoNuevo((prev) => ({
@@ -153,9 +107,9 @@ export default function ActividadCard({
       CodigoAvance: item.CodigoAvance,
       rendimientoApli: item.Rendimiento,
       codUnidad: item.NomCortoUnidad,
-      FechaCaptura: new Date(GenerarFecha(false, true)),
+      FechaCaptura: ahoraTimestamp(),
       horaInicioActividad: null,
-      horaFinalActividad: obtenerFechaFormateada(),
+      horaFinalActividad: finDiaCuliacan(),
       limiteMaximoDeCaptura: null,
       avances: 0,
       jornal: 0,
@@ -166,13 +120,14 @@ export default function ActividadCard({
 
     setSeleccion(true);
   };
+
   const [ActividaEmpleado, setActividadEmpleado] = useState({
     codigoEmpleado: datosEmpleadoNuevo.CodigoEmpleado,
     nombreEmpleado: datosEmpleadoNuevo.Nombre,
     codigoLote: datosEmpleadoNuevo.CodigoLote,
     codigoNave: datosEmpleadoNuevo.CodigoNave,
     codigoTabla: datosEmpleadoNuevo.CodTabla,
-    fecha: new Date(GenerarFecha(false, true)),
+    fecha: ahoraTimestamp(),
     CodigoUsuario: item.CodigoUsuario,
     CodigoCultivo: item.CodigoCultivo,
     CodigoActividad: item.CodigoActividad,
@@ -192,45 +147,22 @@ export default function ActividadCard({
     avances: 0,
     jornal: 0,
     semana: ObtenerSemanaActiva(),
-    horasMaximasDeCaptura :Number( item.limiteMaximoCaptura)
-
+    horasMaximasDeCaptura :Number( item.limiteMaximoCaptura),
+    dias_frecuencia_surcos: item.dias_frecuencia_surcos
   });
 
-    /*
-      console.log("actividad",  ActividaEmpleado.codigoEmpleado,
-          ActividaEmpleado.codigoLote,
-          ActividaEmpleado.codigoNave,
-          ActividaEmpleado.codigoTabla,
-          item.CodigoActividad,
-          item.CodigoAvance,);
-
-    */
-  /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 async  function  GuardarEmpleadoCapturado() {
-    const hoy = new Date();
+  
 
-const inicioHoy = new Date(
-  hoy.getFullYear(),
-  hoy.getMonth(),
-  hoy.getDate(),
-  0,0,0,0
-);
-
-const finHoy = new Date(
-  hoy.getFullYear(),
-  hoy.getMonth(),
-  hoy.getDate(),
-  23,59,59,999
-);
-  const fechaCaptura = new Date(GenerarFecha(false, true));
-  const id = `${ActividaEmpleado.codigoEmpleado}-${ActividaEmpleado.codigoLote}-${ActividaEmpleado.codigoNave}-${ActividaEmpleado.CodTabla}-${ActividaEmpleado.CodigoActividad}-${ActividaEmpleado.CodigoAvance}-${fechaCaptura.getTime()}`;
+  const fechaCaptura = inicioDiaCuliacan();
+  const id = `${ActividaEmpleado.codigoEmpleado}-${ActividaEmpleado.codigoLote}-${ActividaEmpleado.codigoNave}-${ActividaEmpleado.codigoTabla}-${ActividaEmpleado.CodigoActividad}-${ActividaEmpleado.CodigoAvance}-${fechaCaptura.toLocaleDateString()}`;
   const BuscarEmpleado =
   await realmInstance
   .objects("EmpleadoCapturado")
   .filtered(`id == $0`,id);
 
-
-    // console.log(BuscarEmpleado);
+console.log(BuscarEmpleado);
+   
     if (BuscarEmpleado.length > 0) {
       Alert.alert(
         "Del campo y asociados",
@@ -239,6 +171,7 @@ const finHoy = new Date(
       setSeleccion(false);
       return;
     }
+    await GuardarActividadEmpleado();
   }
 
  async function GuardarActividadEmpleado() {
@@ -253,7 +186,8 @@ const finHoy = new Date(
             codigoTabla ==$3  AND
             CodigoActividad ==$4  AND
             CodigoAvance ==$5 AND 
-            fecha ==$6
+            fecha >=$6 AND
+            fecha <=$7
       `,
           ActividaEmpleado.codigoEmpleado,
           ActividaEmpleado.codigoLote,
@@ -261,7 +195,8 @@ const finHoy = new Date(
           ActividaEmpleado.codigoTabla,
           ActividaEmpleado.CodigoActividad,
           ActividaEmpleado.CodigoAvance,
-          new Date(GenerarFecha(false, true))
+          inicioDiaCuliacan(),
+          finDiaCuliacan()
         );
 //const id = `${datosEmpleadoNuevo.CodigoEmpleado}-${datosEmpleadoNuevo.CodigoLote}-${datosEmpleadoNuevo.CodigoNave}-${datosEmpleadoNuevo.CodTabla}-${item.CodigoActividad}-${item.CodigoAvance}-${ fechaCaptura.getTime()}`;
  //console.log(id);

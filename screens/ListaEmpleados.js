@@ -10,6 +10,7 @@ import ModalSurcos from "../src/components/Modal/ModalSurcos";
 import {  useWindowDimensions } from 'react-native';
 import CustomTitle from "../src/components/CustomTitle";
 import CustomOptions from "../src/components/CustomOptions";
+import { finDiaCuliacan, inicioDiaCuliacan } from "../utils/obtenerHoraCuliacan";
 
 const ListaEmpleados = ({ route }) => {
   const [realmInstance, setRealmInstance] = useState(null);
@@ -77,7 +78,7 @@ const ListaEmpleados = ({ route }) => {
 
         const empleadosRealm = realmInstance
           .objects("EmpleadoCapturado")
-          .filtered(`FechaCaptura == $0`, hoy);
+          .filtered(`FechaCaptura >= $0 AND FechaCaptura <= $1`, inicioDiaCuliacan(),finDiaCuliacan());
 
         // Definimos la función que procesa los datos
         const actualizarLista = () => {

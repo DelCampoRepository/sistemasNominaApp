@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import {  useWindowDimensions } from 'react-native';
+import { formatearFechaCuliacan } from "../../../utils/obtenerHoraCuliacan";
 
 const ITEM_MARGIN = 7;
 
@@ -64,7 +65,7 @@ export default function EmpleadoCard({
         {item.CodigoEmpleado}
       </Text>
       <Text style={styles.textSecundario}>{item.Nombre}</Text>
-        <Text style={styles.textSecundario}>{item.FechaCaptura}</Text>
+        <Text style={styles.textSecundario}>{formatearFechaCuliacan(item.FechaCaptura)}</Text>
     </Pressable>
   );
 }

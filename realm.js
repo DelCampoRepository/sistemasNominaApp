@@ -24,7 +24,9 @@ export const getRealmInstance = async () => {
 
 // 🧹 Eliminar la base de datos de Realm correctamente
 export const deleteRealmDatabase = async () => {
-    const realmPath = Realm.defaultPath;
+   
+    {
+        const realmPath = Realm.defaultPath;
 
     try {
         // Si hay una instancia global abierta, la cerramos primero
@@ -38,5 +40,6 @@ export const deleteRealmDatabase = async () => {
         console.log("✅ Base de datos de Realm eliminada correctamente.");
     } catch (error) {
         console.error("❌ Error al eliminar la base de datos de Realm:", error);
+    }
     }
 };

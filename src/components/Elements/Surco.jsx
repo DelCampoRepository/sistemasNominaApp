@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, StyleSheet, Pressable } from "react-native";
+import { Text, StyleSheet, Pressable, TouchableOpacity } from "react-native";
 
 export default function Surco({
   item,
@@ -8,7 +8,7 @@ export default function Surco({
   setSumadorSurcos
 }) {
   // Determinamos si el surco está bloqueado (ocupado al 100% por otros)
-  const esGris = item.estado === "g";
+  const esGris = item.estado === "g" || item.estado ==="b" || item.estado === "r";
 
   const obtenerColor = () => {
     switch (item.estado) {
@@ -20,17 +20,21 @@ export default function Surco({
         return "#9e9e9e"; // Gris (De otro empleado / Bloqueado)
       case "w":
         return "#ffffff"; // Blanco (Disponible)
+      case "b":
+        return "#30ddce";
+         case "r":
+        return "#9e65ed";
       default:
         return "#ffffff";
     }
   };
 
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={() => {
-        !esGris && onPressSurco(item);
+         onPressSurco(item);
       }}
-      onLongPress={() => !esGris && onLongPressSurco(item)}
+      onLongPress={() => onLongPressSurco(item)}
       style={[
         styles.mainContainer,
         {
@@ -44,7 +48,7 @@ export default function Surco({
           styles.textoSurco,
           {
             color: item.estado === "w" ? "#000" : "#fff",
-            fontSize: item.estado === "o" ? 10 : 14 // Se achica si es naranja
+            fontSize:  item.avanceAcum <1  ? 10: 14 // Se achica si es naranja
           }
         ]}
       >
@@ -52,17 +56,21 @@ export default function Surco({
       </Text>
 
       {/* Si es naranja, mostramos el valor decimal debajo */}
-      {item.estado === "o" && (
-        <Text style={styles.textoAvance}>{item.avanceAcum.toFixed(2)}</Text>
+      {(item.estado === "o" || (item.estado === "g" && item.avanceAcum <1 )|| (item.estado === "b" && item.avanceAcum <1 ) || (item.estado === "r" && item.avanceAcum <1 ))&& (
+        <>
+        <Text style={styles.textoAvance}>AE: {item.avanceAcum.toFixed(2)}</Text>
+        <Text  style={styles.textoAvance}>AO: {item.avanceTotalOtros.toFixed(2)}</Text>
+         <Text  style={styles.textoAvance}>AT: {Number(item.avanceTotalOtros.toFixed(2)) + Number(item.avanceAcum.toFixed(2))}</Text>
+        </>
       )}
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
-    width: 50,
-    height: 50,
+    width: 51,
+    height: 60,
     borderRadius: 8,
     margin: 6,
     alignItems: "center",

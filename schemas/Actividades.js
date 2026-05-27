@@ -15,7 +15,8 @@ export const ActividadesSchema = {
     NomCompletoUnidad: "string",
     tieneSurcos: { type: "bool", default: false },
     tablaLabel: "string",
-    limiteMaximoCaptura: "string"
+    limiteMaximoCaptura: "string",
+    dias_frecuencia_surcos:'float'
   }
   //primaryKey: "CodigoActividad",
 };

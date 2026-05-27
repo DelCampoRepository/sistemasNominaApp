@@ -20,6 +20,11 @@ export const SurcoSchema = {
       type: "bool",
       optional: true,
       default: false
-    }
+    },
+    primerFraccionado : {
+      type: "bool",
+      optional: true,
+      default: false
+    },
   }
 };

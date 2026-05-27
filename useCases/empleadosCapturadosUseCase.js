@@ -1,6 +1,7 @@
 import { EnviarEmpleados } from "../services/EnviarEmpleadosService";
 import { exportarRealmAJSON } from "../utils/CreadorArchivos";
-import { fecha } from "../utils/generarHoraLimite";
+
+import { finDiaCuliacan, formatearFechaCuliacan, inicioDiaCuliacan } from "../utils/obtenerHoraCuliacan";
 
 export async function syncEmpleadosCapturados(token)
 {
@@ -8,6 +9,7 @@ export async function syncEmpleadosCapturados(token)
         
         const Empleados = await ObtenerEmpleadosCapturadosRealm();
        await exportarRealmAJSON(realmInstance);
+       console.log(JSON.stringify(Empleados,null,2))
         const response  = await EnviarEmpleados(Empleados, token);
 
         if (response && response.length > 0) {
@@ -26,36 +28,28 @@ export async function syncEmpleadosCapturados(token)
 
 //obtenemos lista de empleados capturados del schema EmpleadoCapturado
 async function  ObtenerEmpleadosCapturadosRealm() {
-const obtenerFechaCuliacan = () => {
-  const ahora = new Date(Date.now() - 7 * 60 * 60 * 1000);
-  return new Date(Date.UTC(
-    ahora.getUTCFullYear(),
-    ahora.getUTCMonth(),
-    ahora.getUTCDate(),
-    0, 0, 0, 0
-  ));
-};
- const hoy = obtenerFechaCuliacan()
-  console.log(hoy.toLocaleDateString(),'asdasd');
-  console.log(hoy.toISOString());
+ 
+
     try{
         const EmpleadosAEnviar = realmInstance
         .objects("EmpleadoCapturado")
         .filtered(`
             CodigoActividad !=$0 AND
             CodigoAvance !=$1 AND
-            FechaCaptura ==$2
+            FechaCaptura >=$2 AND FechaCaptura <=$3
           `, 
           "000", 
           '000', 
-          hoy);
-      
-        
+          inicioDiaCuliacan(),
+          finDiaCuliacan()
+          );
+            
           console.log(EmpleadosAEnviar.length )
      await   realmInstance.write(() => {
             EmpleadosAEnviar.forEach(empleado => {
                 //buscamos los surcos que coincidan con lso datos del empleado
                 const surcosEmpleadoEnRealm = BuscaSurcosDeEmpleado(empleado);
+                console.log(JSON.stringify(surcosEmpleadoEnRealm,null,2))
                 //limpiamos los surcosAvances  del empleado
                 empleado.surcosAvances.splice(0);
                
@@ -80,6 +74,9 @@ const obtenerFechaCuliacan = () => {
 //buscamos todos los Surcos que coincidan con la informacion del empleado
 function BuscaSurcosDeEmpleado(empleado)
 {
+  
+  const fechaIn=inicioDiaCuliacan()
+  const find =finDiaCuliacan()
      const surcosEmpleadoAEnviar = realmInstance.objects("Surco")
             .filtered(`
                 codEmpleado == $0 AND
@@ -87,14 +84,19 @@ function BuscaSurcosDeEmpleado(empleado)
                 nave == $2 AND
                 tabla ==$3 AND
                 actividad == $4 AND 
-                avance ==$5 
+                avance ==$5 AND
+                fecha >=$6 AND 
+                fecha <=$7
              `,
                 empleado.CodigoEmpleado,
                 empleado.CodigoLote,
                 empleado.CodigoNave,
                 empleado.CodTabla,
                 empleado.CodigoActividad,
-                empleado.CodigoAvance
+                empleado.CodigoAvance,
+                fechaIn,
+                find
+                
             );
     return surcosEmpleadoAEnviar;
 }
@@ -103,8 +105,6 @@ function BuscaSurcosDeEmpleado(empleado)
 async function GuardarEmpleadosSincronizados(empleados)
 {
 
-
-    
 
 
      try{
@@ -132,7 +132,8 @@ async function GuardarEmpleadosSincronizados(empleados)
                     CodTabla == $3 AND
                     CodigoActividad == $4 AND
                     CodigoAvance == $5 AND
-                    FechaCaptura == $6
+                    FechaCaptura >= $6 AND
+                    FechaCaptura <= $7
                 `,
                     empResp.codigoEmpleado,
                     empResp.codigoLote,
@@ -140,7 +141,8 @@ async function GuardarEmpleadosSincronizados(empleados)
                     empResp.codTabla,
                     empResp.codigoActividad,
                     empResp.codigoAvance,
-                    new Date(empResp.fechaCaptura)
+                    inicioDiaCuliacan(),
+                    finDiaCuliacan()
               )[0];
 
             if (empleado && empleado.solicitoPermiso === true && empResp.tienePermiso ===true) {
@@ -152,11 +154,11 @@ async function GuardarEmpleadosSincronizados(empleados)
                 tienePermiso: empResp.tienePermiso,
                 limiteMaximoDeCaptura:
                   empleado.tienePermiso === false
-                    ? fecha()
+                    ? finDiaCuliacan()
                     : empleado.limiteMaximoCaptura,
                 horaFinalActividad:
                   empleado.tienePermiso === false
-                    ? fecha()
+                    ?finDiaCuliacan()
                     : new Date(empleado.horaFinalActividad)
               });
             }else{
@@ -194,7 +196,8 @@ async function GuardarEmpleadosSincronizadosActividades(empleados){
                     codigoTabla == $3 AND
                     CodigoActividad == $4 AND
                     CodigoAvance == $5 AND
-                    fecha == $6
+                    fecha >= $6 AND
+                    fecha <=$7
                 `,
                     empResp.codigoEmpleado,
                     empResp.codigoLote,
@@ -202,7 +205,8 @@ async function GuardarEmpleadosSincronizadosActividades(empleados){
                     empResp.codTabla,
                     empResp.codigoActividad,
                     empResp.codigoAvance,
-                    new Date(empResp.fechaCaptura)
+                    inicioDiaCuliacan(),
+                    finDiaCuliacan()
               )[0];
 
             if (actividad && actividad.solicitoPermiso === true && empResp.tienePermiso ===true) {
@@ -213,7 +217,7 @@ async function GuardarEmpleadosSincronizadosActividades(empleados){
                 tienePermiso: empResp.tienePermiso,
                 limiteMaximoDeCaptura:
                 actividad.tienePermiso === false
-                    ? fecha()
+                    ? finDiaCuliacan()
                     : actividad.limiteMaximoCaptura
                 });
             }

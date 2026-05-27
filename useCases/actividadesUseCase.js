@@ -4,12 +4,12 @@ export async function syncActividades(realmInstance, codigo, temporada, token) {
 
     try{
             const respuesta = await ObtenerActividades(codigo, temporada, token);
-
+ console.log('res', respuesta)
             if(respuesta.estado !== 1)
             {
                 return false;
             }
-          
+           
             const resultado = await guardarActividadesEnRealm(realmInstance, respuesta);
             return resultado;
     }
@@ -33,6 +33,7 @@ async function guardarActividadesEnRealm(realmInstance, data) {
             }
 
             data.actividades.forEach(act => {
+              console.log(act)
               realmInstance.create(
                 "Actividades",
                 {
@@ -49,7 +50,8 @@ async function guardarActividadesEnRealm(realmInstance, data) {
                   CodUnidad: act.codUnidad,
                   NomCortoUnidad: act.nomCortoUnidad,
                   NomCompletoUnidad: act.nomCompletoUnidad,
-                  limiteMaximoCaptura: String(act.limiteMaximoCaptura)
+                  limiteMaximoCaptura: String(act.limiteMaximoCaptura),
+                  dias_frecuencia_surcos:act.dias_frecuencia_surcos
                 },
                 "modified"
               );

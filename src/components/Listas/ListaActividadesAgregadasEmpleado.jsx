@@ -4,6 +4,7 @@ import ActividadEmpleadoCard from "../Cards/ActividadEmpleadoCard";
 import { getRealmInstance } from "../../../realm";
 import { Dimensions } from "react-native";
 import {  useWindowDimensions } from 'react-native';
+import { finDiaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 0;
 
@@ -14,6 +15,7 @@ export default function ListaActividadesAgregadasEmpleado({
   setDatosActividad,
   datosActividad
 }) {
+  //console.log('datosss',datosEmpleadoSeleccionado)
   
      const { width } = useWindowDimensions();
   const [realmInstance, setRealmInstance] = useState(null);
@@ -30,9 +32,11 @@ export default function ListaActividadesAgregadasEmpleado({
       const ListaActiviades = realmInstance
         .objects("ActiviadesPorEmpleado")
         .filtered(
-          `codigoEmpleado == $0 AND fecha ==$1`,
+          `codigoEmpleado == $0 AND fecha >=$1 AND 
+          fecha <=$2`,
           datosEmpleadoSeleccionado.CodigoEmpleado,
-          new Date(datosEmpleadoSeleccionado.FechaCaptura)
+          inicioDiaCuliacan(),
+          finDiaCuliacan()
         )
         .sorted([
           ["codigoLote", false],
@@ -46,7 +50,7 @@ export default function ListaActividadesAgregadasEmpleado({
       setActiviades(ListaActiviades);
     }
   }, [realmInstance]);
-
+//console.log(JSON.stringify(activiades,null,2));
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>

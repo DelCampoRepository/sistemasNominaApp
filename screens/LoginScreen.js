@@ -19,19 +19,20 @@ import { ConsultarDatosSemanaActiva } from "../services/obtenerSemanaService";
 import ModalCargando from "../src/components/ModalSesion";
 import { exportarRealmAJSON2 } from "../utils/recuperaLocal";
 import { importarJSONaRealmManual } from "../utils/importarManual";
+import { exportarRealmAJSON } from "../utils/CreadorArchivos";
 
 export default function LoginScreen({ navigation }) {
   
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [inputUser, setInputUser] = useState("jefnavcos232");
-  const [inputPassword, setInputPassword] = useState("jncos232");
+  const [inputUser, setInputUser] = useState("Jefnavcos232");
+  const [inputPassword, setInputPassword] = useState("Jncos232");
   const [realmInstance, setRealmInstance] = useState(null);
   const [desbloquear, setDesbloquear] = useState(false);
  
   const [MostraModal, setMostraModal] = useState(false);
   // Inicializamos Realm solo una vez
   useEffect(() => {
-   //deleteRealmDatabase();
+  // deleteRealmDatabase();
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
        // await borrar_token();  
@@ -421,8 +422,8 @@ async function BorrarDatos() {
           <Text style={styles.loginButtonText}>INICIAR SESION</Text>
         </TouchableOpacity>
 
-{/* desbloquear === true &&*/}
-     {
+{/*desbloquear === true &&*/}
+     { 
       <>
           <TouchableOpacity
                 style={styles.botonTablas}
