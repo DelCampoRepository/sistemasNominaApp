@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   TextInput,
@@ -122,6 +122,7 @@ function confirmarAvanceDecimal(){
            avanceTotalOtros:datosSurcoFraccionSelec.avanceTotalOtros,
            seleccionado: false, 
            fecha: "",
+           avanceCompleto: datosSurcoFraccionSelec.avanceTotalOtros +Number(valor.toFixed(2)),
            primerFraccionado:false
           } : surco
         ));
@@ -136,6 +137,7 @@ function confirmarAvanceDecimal(){
             codEmpleado: datosActividad.codigoEmpleado, 
             avanceTotalOtros:datosSurcoFraccionSelec.avanceTotalOtros,
             seleccionado: true, 
+            avanceCompleto: datosSurcoFraccionSelec.avanceTotalOtros +Number(valor.toFixed(2)),
             fecha: new Date().toISOString(),
             primerFraccionado:primerFraccionado
           } : surco,

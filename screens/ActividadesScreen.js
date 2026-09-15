@@ -18,6 +18,7 @@ import CustomTitle from "../src/components/CustomTitle";
 import { SurcosContext } from "../Contexts/SurcosContext";
 import CustomOptions from "../src/components/CustomOptions";
 import {  useWindowDimensions } from 'react-native';
+import { formatearFechaCuliacan, inicioDiaCuliacan, inicioDiaCuliacanFecha } from "../utils/obtenerHoraCuliacan";
 
 const ITEM_MARGIN = 18;
 
@@ -76,13 +77,13 @@ const ActividadesScreen = ({ route }) => {
       const resultados = realmInstance
         .objects("EmpleadoCapturado")
         .filtered(
-          "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND CodigoActividad == $3 AND CodigoAvance == $4 AND FechaCaptura == $5",
+          "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND CodigoActividad == $3 AND CodigoAvance == $4 AND FechaCaptura >= $5",
           String(codigoLote),
           nave,
           String(tabla),
           String(actividad.CodigoActividad),
           String(actividad.CodigoAvance),
-          new Date(fechaIni !== undefined ? fechaIni : GenerarFecha(true))
+          inicioDiaCuliacanFecha(fechaIni)
         );
 
       const empleadosUnicos = new Set(resultados.map(e => e.CodigoEmpleado));
@@ -109,15 +110,16 @@ const ActividadesScreen = ({ route }) => {
       const resultados = realmInstance
         .objects("EmpleadoCapturado")
         .filtered(
-          "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND CodigoActividad == $3 AND CodigoAvance == $4  AND FechaCaptura == $5",
+          "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND CodigoActividad == $3 AND CodigoAvance == $4  AND FechaCaptura >= $5",
           String(codigoLote),
           nave,
           String(tabla),
           String(actividad.CodigoActividad),
           String(actividad.CodigoAvance),
-          new Date(GenerarFecha(true))
+          inicioDiaCuliacan()
         );
-
+        
+       
       let sumaAvances = 0;
 
       resultados.forEach(e => {
@@ -132,6 +134,14 @@ const ActividadesScreen = ({ route }) => {
     setJornalTotalPorActividad(jornalesTotales);
     setAvancesPorActividad(totales);
   };
+
+  function obtenerAvanvecSurco()
+  {
+
+  }
+
+  
+
 
   const GenerarFecha = (formato = false) => {
     //   console.log(limiteMaximoCaptura, "limiteMaximoCaptura");
@@ -190,6 +200,7 @@ const ActividadesScreen = ({ route }) => {
     },
     [realmInstance]
   );
+  
 
   const renderItem = ({ item }) => {
     return (

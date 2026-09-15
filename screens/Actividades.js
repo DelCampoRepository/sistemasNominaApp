@@ -5,11 +5,11 @@ import {
   View,
   TouchableOpacity,
   Image,
-  ActivityIndicator
+
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getRealmInstance } from "../realm";
-import { tr } from "date-fns/locale";
+
 import { FlatList } from "react-native-gesture-handler";
 import { Dimensions } from "react-native";
 

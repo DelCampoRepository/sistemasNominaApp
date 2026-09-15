@@ -23,19 +23,19 @@ import { exportarRealmAJSON } from "../utils/CreadorArchivos";
 
 export default function LoginScreen({ navigation }) {
   
+  
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [inputUser, setInputUser] = useState("Jefnavcos232");
-  const [inputPassword, setInputPassword] = useState("Jncos232");
+  const [inputUser, setInputUser] = useState("Jefnavcos41");
+  const [inputPassword, setInputPassword] = useState("Jncos41");
   const [realmInstance, setRealmInstance] = useState(null);
   const [desbloquear, setDesbloquear] = useState(false);
- 
   const [MostraModal, setMostraModal] = useState(false);
   // Inicializamos Realm solo una vez
   useEffect(() => {
-  // deleteRealmDatabase();
+   //deleteRealmDatabase();
     const inicializarRealm = async () => {
       setRealmInstance(await getRealmInstance());
-       // await borrar_token();  
+     //await borrar_token();  
     };
     inicializarRealm();
   }, []);

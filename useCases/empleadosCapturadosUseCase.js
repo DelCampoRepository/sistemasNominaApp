@@ -18,6 +18,7 @@ export async function syncEmpleadosCapturados(token)
           await  GuardarEmpleadosSincronizadosActividades(response);
           await  exportarRealmAJSON(realmInstance);
         }
+        
         return true;
     }
     catch(error)

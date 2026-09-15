@@ -10,6 +10,7 @@ import { syncActividades } from "../useCases/actividadesUseCase";
 import { syncEmpleados } from "../useCases/empleadosUseCase";
 import { syncEmpleadosCapturados } from "../useCases/empleadosCapturadosUseCase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { EnviarRegistrosSurcosTrabajados } from "../useCases/SurcosTrabajadosUseCase";
 
 
 
@@ -38,7 +39,7 @@ export default function LoadingScreen({ navigation }) {
           {
         try {
          //                                              await BorrarDatos();
-
+          
         // await borrar_token();  
          //si token no existe
               const userData = realmInstance.objects('UserData');
@@ -90,7 +91,7 @@ export default function LoadingScreen({ navigation }) {
                 const step5 =  await syncEmpleadosCapturados( datosToken.token);
                 setStatusText("Empleados capturados sincronizados");
                 setProgressBarValue(1);
-
+                const stemp7= await EnviarRegistrosSurcosTrabajados(realmInstance, datosToken.token);
                 const step6 = await BorrarRegistrosViejos(semana[0]);
                     console.log(step2,"asdasds")
                 if(step1 && step2 && step3 && step4 && step5)

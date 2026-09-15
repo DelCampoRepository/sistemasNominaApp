@@ -33,6 +33,8 @@ const ReportesScreen = () => {
   const [tablasRealm, setTablasRealm] = useState([]);
 
   const [naveSeleccionada, setNaveSeleccionada] = useState(null);
+  const [loteSeleccionado, setLoteSeleccionado] = useState(null);
+
   const [tablaSeleccionada, setTablaSeleccionada] = useState(null);
   const [tablasFiltradas, setTablasFiltradas] = useState([]);
 
@@ -104,10 +106,12 @@ const ReportesScreen = () => {
         const naves = realm.objects("Nave");
 
         const opcionesNaves = naves.map(nave => ({
-          label: `${nave.CodigoNave} - ${nave.DescripcionNave ||
+          label: `${nave.CodigoLote}- ${nave.CodigoNave} - ${nave.DescripcionNave ||
             "Sin Descripción"}`,
-          value: nave.CodigoNave
+          value: nave.CodigoNave,
+          lote:nave.CodigoLote
         }));
+        
         setNavesRealm(opcionesNaves);
       } catch (error) {
         console.error("Error al cargar naves desde Realm:", error);
@@ -204,7 +208,7 @@ const ReportesScreen = () => {
           .objects("Nave")
           .filtered("CodigoNave == $0 ", naveSeleccionada);
 
-        const resultados = realmInstance
+        const datosTabla = realmInstance
           .objects("Tablas")
           .filtered(
             "CodigoTabla == $0 AND CodigoNave == $1",
@@ -212,34 +216,31 @@ const ReportesScreen = () => {
             naveSeleccionada
           );
 
-        if (resultados.length === 0) {
+        if (datosTabla.length === 0) {
           Alert.alert(
             "Del Campo y Asociados",
             "No se encontró la tabla seleccionada."
           );
         }
 
+        
+          //console.log(resultados);
         // console.log(obtenerFechaFormateada(fechaInicio).toISOString(), "cccc");
         // console.log(obtenerFechaFormateadaFin(fechaFin).toISOString(), "xxxx");
 
         const params = {
-          numeroNave:
-            resultadosnave[0].CodigoLote +
-            " " +
-            resultadosnave[0].DescripcionLote,
-          nombreNave: resultadosnave[0].DescripcionNave,
-          Descripcion: resultadosnave[0].DescripcionLote,
-          descripcionTabla: resultados[0].Descripcion,
           nave: naveSeleccionada,
-          cantidadSurcos: resultados[0].CantidadSurcos,
-          tabla: tablaSeleccionada,
-          codigoLote: resultados[0].CodigoLote,
-          mostrarReporte: true,
-          fechaIni: obtenerFechaFormateada(fechaInicio).toISOString(),
-          fechaFin: obtenerFechaFormateadaFin(fechaFin).toISOString()
+          tabla:tablaSeleccionada,
+          lote: loteSeleccionado,
+          fechaIni: fechaInicio.getTime(),
+          fechaFin: fechaFin.getTime(),
+          cantidadSurcos: datosTabla[0].CantidadSurcos,
+          descLote: resultadosnave[0].DescripcionLote,
+          descNave: resultadosnave[0].DescripcionNave,
+          descTabla: datosTabla[0].Descripcion
         };
 
-        navegacion.navigate("ActividadesScreen", params);
+        navegacion.navigate("ReporteAct", params);
       }
       //onsole.log(resultados, " resultados tablas");
 
@@ -386,7 +387,7 @@ const ReportesScreen = () => {
           fechaIni: obtenerFechaFormateada(fechaInicio).toISOString(),
           fechaFin: obtenerFechaFormateadaFin(fechaFin).toISOString()
         };
-        console.log(params);
+       
         navegacion.navigate("Reporte Empleados", params);
       }
 
@@ -407,12 +408,15 @@ const ReportesScreen = () => {
       </View>
      
     <View style={{paddingTop:30, width:"100%"}}>
-         <DropdownComponent
+          
+      
+      <DropdownComponent
           label="Naves"
           placeholder="Seleccione una nave"
           options={navesRealm}
           onChange={item => {
             if (item) {
+              setLoteSeleccionado(item.lote);
               setNaveSeleccionada(item.value);
             } else {
               setNaveSeleccionada(null);

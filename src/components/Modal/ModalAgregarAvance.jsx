@@ -43,6 +43,7 @@ export default function ModalAgregarAvance({
   useEffect(() => {
     setAvance(datosActividad.avances);
   }, [datosActividad]);
+  
   const handleOnpress = () => {
     if (RealmInstance === null) return;
    

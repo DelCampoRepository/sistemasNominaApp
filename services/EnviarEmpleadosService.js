@@ -17,12 +17,12 @@ export const EnviarEmpleados = async (lista, token) => {
   );
 
     
-   if (response.status === 401) throw new Error("SESION_EXPIRADA");
+  if (response.status === 401) throw new Error("SESION_EXPIRADA");
   if (response.status === 500) throw new Error("ERROR_SERVIDOR");
 
   const text = await response.text();
-
   
+
   return response.ok ? JSON.parse(text) : null;
 
  }catch(error)

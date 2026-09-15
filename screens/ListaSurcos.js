@@ -4,31 +4,35 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  
+  TouchableOpacity,
+  Modal
 } from "react-native";
 import { getRealmInstance } from "../realm";
 import CustomOptions from "../src/components/CustomOptions";
 import CustomTitle from "../src/components/CustomTitle";
+import { finDiaCuliacanFecha, inicioDiaCuliacanFecha } from "../utils/obtenerHoraCuliacan";
+import { consultarSurcosTrabajadosParaReporte, obtenerEstatusSurco } from "../services/SurcosTrabajadosService";
+import ModalFechasTrabajadasSurco from "../src/components/Modal/ModalFechasTrabajadasSurco";
 //Funcion que pintara el surco si esta trabajado o no
-const ListaSurcos = ({ route, navigation }) => {
-  const [loading, setLoading] = useState(false);
+const ListaSurcos = ({ route }) => {
+ 
   const [realmInstance, setRealmInstance] = useState(null);
   const [surcosTrabajados, setSurcostrabajado] = useState(null);
-  
+  const [surcoPresionado, setSurcoPresionado] = useState(0);
+  const [modalVisble, setModalVisible]= useState(false);
   const {
-    CodigoLote,
-    CodigoNave,
-    CodigoActividad,
-    CodigoAvance,
-    CodTabla,
-    cantidadSurcos,
+    lote,
+    nave,
+    tabla,
     fechaIni,
     fechaFin,
-    DescripcionTabla,
-    numeroNave,
-    nombreNave,
-    descripcionAct
-  } = route.params || {};
+    cantidadSurcos,
+    descNave,
+    descLote,
+    descTabla,
+  } = route.params.parametros || {};
+
+  const {CodigoActividad,CodigoAvance,Descripcion} =route.params.datosActivdad||{};
 
   const [surcosFill, setsurcosFill] = useState([]);
 
@@ -43,141 +47,81 @@ const ListaSurcos = ({ route, navigation }) => {
     () => {
       
       if (realmInstance != null) {
-        const emp = realmInstance.objects("EmpleadoCapturado").filtered(
-          `   CodigoLote == $0 AND 
-              CodigoNave == $1 AND 
-              CodigoActividad == $2 AND 
-              CodigoAvance == $3 AND 
-              CodTabla == $4 AND 
-              FechaCaptura >= $5 AND
-              FechaCaptura <= $6`,
-          String(CodigoLote),
-          String(CodigoNave),
-          String(CodigoActividad),
-          String(CodigoAvance),
-          String(CodTabla),
-          new Date(fechaIni),
-          new Date(fechaFin)
-        );
-
        
-       
-        const surcosTrabajados = new Set();
-        emp.forEach(empleado => {
-          if (empleado.surcos?.length) {
-            empleado.surcos.forEach(s => {
-             
-              const fechaEmpleado = empleado.FechaCaptura;
-  
-              const dentroRango = new Date(fechaEmpleado) >= new Date(fechaIni)&& new Date(fechaEmpleado) <= new Date(fechaFin);
-             
-              if(dentroRango){
-                 surcosTrabajados.add(Number(s));
-              }
-            });
-          }
-        });
-
         const surcos = [];
         for (let i = 1; i <= cantidadSurcos; i++) {
-          surcos.push({ numSurco: i, trabajado: surcosTrabajados.has(i) });
-        }
-
-        function soloFecha(date) {
-          return new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate()
-          ).getTime();
+          surcos.push({ numSurco: i, trabajado: false, estado:"w" });
         }
 
          let cantidad = 0;
-         surcos.forEach(surco => {
-            if(surco.trabajado)
+         surcos.forEach(surco => {  
+           
               cantidad++;
          });
        
-         setSurcostrabajado(cantidad);
         setsurcosFill(surcos);
       }
     },
     [realmInstance]
   );
+  
+  useEffect(() => {
 
-  useEffect(() => {}, [surcosFill]);
+    if(surcosFill.length >0 && realmInstance !=null)
+    {
+     setSurcostrabajado( consultarSurcosTrabajadosParaReporte(route.params,realmInstance))
+    const trabajados= obtenerEstatusSurco(route.params, realmInstance);
 
-  const renderItem = ({ item }) => {
-    return (
-      <View style={[styles.surco, item.trabajado && styles.surcoTrabajado]}>
-        <Text style={styles.numero}>
-          {item.numSurco}
-        </Text>
-      </View>
-    );
-  };
+      const listaRender = surcosFill.map(item => ({
+      ...item,
+      estado: trabajados.find(
+        x => Number(x.surco) === item.numSurco
+    )?.estado ?? item.estado
+    }));
 
- 
-  const GenerarFecha = (horaExtra = false, SoloFecha = true) => {
-    const ahora = new Date();
-
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
-    let horas = String(ahora.getHours()).padStart(2, "0");
-
-    const minutos = String(ahora.getMinutes()).padStart(2, "0");
-    const segundos = String(ahora.getSeconds()).padStart(2, "0");
-    let fechaFormateada = ``;
-
-    if (SoloFecha) {
-      fechaFormateada = `${dia}/${mes}/${año}`;
-    } else {
-      fechaFormateada = `${año}-${mes}-${dia} ${horas}:${horaExtra
-        ? Number(minutos) + Number(2)
-        : minutos}:${segundos}`;
+     setsurcosFill(listaRender)
     }
-    return fechaFormateada;
-  };
+   
+  }, [realmInstance]);
+
+ useEffect(()=>{
+    if(surcosTrabajados != null && surcoPresionado != 0)
+    {
+
+      
+    }
+ },[surcoPresionado,surcosTrabajados])
+
+
+
 
   return (
-
     <View style={{ flex: 1, backgroundColor: "#f0fff0", zIndex: -2, alignItems: "center" }}>
+      {surcosTrabajados && <ModalFechasTrabajadasSurco visible={modalVisble} setVisible={setModalVisible} surco={surcoPresionado} registros={surcosTrabajados}  />}
         <CustomTitle title="- Surcos trabajados -" />
-      <View style={styles.header}>
-        <Text style={styles.headerText}>
-          {CodigoLote}
-        </Text>
-        <Text style={styles.headerText}>
-          {CodigoNave} - {nombreNave}
-        </Text>
-        <Text style={styles.headerText}>
-          {descripcionAct.trim()} {CodigoActividad} - {CodigoAvance}{" "}
-        </Text>
-        <Text style={styles.headerText}>
-          {DescripcionTabla}
-        </Text>
-        <Text style={styles.headerText}>
-          {GenerarFecha()}
-        </Text>
-        <Text style={styles.headerText}>
-          Surcos totales: {cantidadSurcos}
-        </Text>
-         <Text style={styles.headerText}>
-          Surcos trabajados: {surcosTrabajados}
-        </Text>
-         <Text style={styles.headerText}>
-          Surcos restantes: {cantidadSurcos-surcosTrabajados}
-        </Text>
-      </View>
+        <View style={{justifyContent:'flex-start', width:"100%"}}>
+          <Text style={{textAlign:'left', marginLeft:20}}>Lote: {lote}-{descLote}</Text>
+          <Text style={{textAlign:'left', marginLeft:20}}>Nave: {nave}-{descNave}</Text>
+          <Text style={{textAlign:'left', marginLeft:20}}>Tabla: {tabla}-{descTabla}</Text>
+           <Text style={{textAlign:'left', marginLeft:20}}>Actividad: {CodigoActividad}-{CodigoAvance} {Descripcion}</Text>
+            <Text style={{textAlign:'left', marginLeft:20}}>Periodo: {new Date(fechaIni).toLocaleString()} - {finDiaCuliacanFecha(fechaFin).toLocaleString()}</Text>
+        </View>
 
       <View style={{  backgroundColor: "#f0fff0", zIndex: -2 , width: "100%", height:"61%"}}>
         <FlatList
           data={surcosFill}
           keyExtractor={item => item.numSurco.toString()}
-          numColumns={3}
+          numColumns={6}
           renderItem={({ item }) =>
-            <View
-              style={[styles.surco, item.trabajado && styles.surcoTrabajado]}
+            <TouchableOpacity onPress={() =>{setSurcoPresionado(item.numSurco);
+              setModalVisible(true)}
+            }
+              style={[styles.surco,
+
+                  {
+                    backgroundColor: item.estado ==="gr"? "#4CAF50" : item.estado === 'o'? "#f49a23":"white" 
+                  }
+               ]}
             >
               <Text
                 style={
@@ -186,7 +130,7 @@ const ListaSurcos = ({ route, navigation }) => {
               >
                 {item.numSurco}
               </Text>
-            </View>}
+            </TouchableOpacity>}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={true}
         />
@@ -195,6 +139,8 @@ const ListaSurcos = ({ route, navigation }) => {
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   header: {

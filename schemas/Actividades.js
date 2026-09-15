@@ -16,7 +16,8 @@ export const ActividadesSchema = {
     tieneSurcos: { type: "bool", default: false },
     tablaLabel: "string",
     limiteMaximoCaptura: "string",
-    dias_frecuencia_surcos:'float'
+    dias_frecuencia_surcos:'float',
+    ReinicioTemp :'int'
   }
   //primaryKey: "CodigoActividad",
 };

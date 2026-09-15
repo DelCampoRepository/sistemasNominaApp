@@ -60,7 +60,7 @@ export default function Surco({
         <>
         <Text style={styles.textoAvance}>AE: {item.avanceAcum.toFixed(2)}</Text>
         <Text  style={styles.textoAvance}>AO: {item.avanceTotalOtros.toFixed(2)}</Text>
-         <Text  style={styles.textoAvance}>AT: {Number(item.avanceTotalOtros.toFixed(2)) + Number(item.avanceAcum.toFixed(2))}</Text>
+         <Text  style={styles.textoAvance}>AT: {item.avanceCompleto.toFixed(2)}</Text>
         </>
       )}
     </TouchableOpacity>
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold"
   },
   textoAvance: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#fff",
     fontWeight: "900"
   }

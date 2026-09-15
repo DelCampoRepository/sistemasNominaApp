@@ -85,3 +85,11 @@ export const inicioDiaCuliacanFecha = (fecha) => {
     .startOf('day')
     .toMillis());
 };
+
+export const finDiaCuliacanFecha = (fecha) => {
+  const base = fecha ? DateTime.fromJSDate(new Date(fecha)) : DateTime.now();
+  return new Date(base 
+    .setZone('America/Mazatlan')
+    .endOf('day')
+    .toMillis());
+};

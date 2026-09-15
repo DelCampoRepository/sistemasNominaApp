@@ -29,6 +29,7 @@ export default function ListaNaves({
     }
   }, [realmInstance]);
 
+  
   return (
     <View style={{ flex: 1, borderRadius: 10 }}>
       <View style={styles.headerContainer}>
@@ -38,7 +39,7 @@ export default function ListaNaves({
         {naves.length > 0 && (
           <FlatList
             data={naves}
-            keyExtractor={(item) => item.CodigoNave.toString()}
+            keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
               <NaveCard
                 item={item}

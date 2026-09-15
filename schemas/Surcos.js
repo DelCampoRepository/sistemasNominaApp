@@ -1,6 +1,7 @@
 export const SurcoSchema = {
   name: "Surco",
   properties: {
+    idCompuesto:"string",
     surco: "string",
     tabla: "string",
     nave: "string",
@@ -26,5 +27,11 @@ export const SurcoSchema = {
       optional: true,
       default: false
     },
+    jefeDeNave : {
+      type: "string",
+      optional: true,
+      default: ""
+    },
+
   }
 };

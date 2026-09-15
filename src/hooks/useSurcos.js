@@ -34,12 +34,9 @@ useEffect(() =>{
 
             if(cantidadSurcosTabla){
                 generarListaBase(cantidadSurcosTabla);
-                buscarSurcosVerdes();
-                buscarSurcosGrises();
-                buscarSurcosAzules();
-                buscarDiasMorados();
-                calculoAvanceFraccParaCadaSurco(cantidadSurcosTabla);
-            
+                buscarSurcosDiaActual();
+                buscarSurcosDiasAnteriores();
+                actualizarSurcosRenderFraccion();
             }
         }
         
@@ -51,17 +48,6 @@ useEffect(() =>{
 [realmInstance, modales.modalSurcos, datosActividad.codigoEmpleado]
 );
 
-useEffect(()=>{
-//console.log(JSON.stringify(datosSurcoFraccionSelec,null,2));
-    
-},[datosSurcoFraccionSelec])
-useEffect(()=>{
-
-console.log(JSON.stringify(listaSurcos[0],null,2));
-console.log(JSON.stringify(listaSurcos[1],null,2));
-console.log(JSON.stringify(listaSurcos[2],null,2));
-    
-},[listaSurcos])
 
 function generarListaBase(cantidad){
         const listaBase = [];
@@ -74,6 +60,7 @@ function generarListaBase(cantidad){
                     surco: i,
                     avanceAcum: 0,
                     avanceTotalOtros:0,
+                    avanceCompleto:0,
                     estado: "w",
                     codEmpleado:"",
                     seleccionado:false,
@@ -90,32 +77,19 @@ function generarListaBase(cantidad){
 
 function handlePress(surcoPresionado) {
 
-
-    if(surcoPresionado.estado =="o" && surcoPresionado.avanceTotalOtros > 0)
-    {
-        return;
-    }
-
-    if(surcoPresionado.estado =="g" && surcoPresionado.avanceTotalOtros > 0)
-    {
-        return;
-    }
-    if(surcoPresionado.estado =="r" && surcoPresionado.avanceTotalOtros > 0)
-    {
-        return;
-    }
-    if(surcoPresionado.estado =="b" && surcoPresionado.avanceTotalOtros > 0)
-    {
-        return;
-    }
-
-    if(surcoPresionado.estado ==="b" ||surcoPresionado.estado ==="g" || surcoPresionado.estado ==="r" && surcoPresionado.avanceAcum === 1)
+    if(surcoPresionado.estado ==="b" ||surcoPresionado.estado ==="g" || surcoPresionado.estado ==="r" )
     {
        
         setDatosSurcoTrabajado(surcoPresionado);
         setMostrarInfo(true);
         return;
     }
+
+    if(surcoPresionado.estado =="o" )
+    {
+        return;
+    }
+   
     setMostrarInfo(false);
   const seleccionando = !surcoPresionado.seleccionado;
 
@@ -187,9 +161,12 @@ function guardarSurcosNuevos(listaSurcos){
         return;
    try{
 
+    const userData = realmInstance.objects("UserData");
+
       const ListasurcoSchema = listaSurcos
     .filter(item => item.avanceAcum !== 0)
     .map(item => ({
+        idCompuesto: `L${datosActividad.codigoLote}N${datosActividad.codigoNave}T${datosActividad.codigoTabla}S${String(item.surco)}E${datosActividad.codigoEmpleado}A${ datosActividad.CodigoActividad}AV${datosActividad.CodigoAvance}J${userData[0].codigo}F${ahoraTimestamp().toISOString().split("T")[0]}`,
         surco: String(item.surco),
         tabla: datosActividad.codigoTabla,
         nave: datosActividad.codigoNave,
@@ -203,78 +180,73 @@ function guardarSurcosNuevos(listaSurcos){
         semanaActiva: String(semana),
         trabajadoTotal: item.avanceAcum + item.avanceTotalOtros === 1 ? true : false,
         seleccionado: item.seleccionado,
-        primerFraccionado: item.primerFraccionado
+        primerFraccionado: item.primerFraccionado,
+        jefeDeNave:userData[0].codigo
     }));
-     realmInstance.write(()=>{
+
+    const avanceAcum = ListasurcoSchema.reduce(function(acumulador,surco){
+
+        return acumulador + surco.avanceAcum
+    },0)
+   
+  
+    const listaNumeroSurco = ListasurcoSchema.map(item => Number(item.surco));
+
+
+    const emp = realmInstance
+    .objects("EmpleadoCapturado")
+    .filtered(`
+        CodigoEmpleado == $0 AND 
+        CodigoLote == $1 AND 
+        CodigoNave == $2 AND  
+        CodTabla == $3 AND 
+        CodigoActividad == $4 AND 
+        CodigoAvance == $5 AND 
+        FechaCaptura >= $6 AND 
+        FechaCaptura <= $7`,
+        datosActividad.codigoEmpleado,
+        datosActividad.codigoLote,        
+        datosActividad.codigoNave,
+        datosActividad.codigoTabla,
+        datosActividad.CodigoActividad,
+        datosActividad.CodigoAvance,
+        inicioDiaCuliacan(),
+        finDiaCuliacan()
+    )
+    
+
+   
+    realmInstance.write(()=>{
         
        ListasurcoSchema.forEach(surco => { 
-        realmInstance.create("Surco", surco,'modified');
-      });
+            realmInstance.create("Surco", surco,'modified');
+        });
+
+        if(emp)
+        {
+            emp[0].Avances =avanceAcum
+            emp[0].surcos = listaNumeroSurco
+        }
+
     });
    }
    catch(error){
         console.log(error);
    }
-
-
 }
 
-function buscarSurcosVerdes(){
-
-   const surcosGuardadosHoy= realmInstance.objects("Surco").filtered(`
-        codEmpleado ==$0 AND
-        avanceAcum ==$1 AND
-        fecha >=$2 AND
-        fecha <=$3 AND
-        lote == $4 AND
-        nave == $5 AND 
-        tabla == $6 AND 
-        actividad == $7 AND  
-        avance == $8
-        `,
-        datosActividad.codigoEmpleado,
-        1,
-        inicioDiaCuliacan(),
-        finDiaCuliacan(),
-        datosActividad.codigoLote,
-        datosActividad.codigoNave,
-        datosActividad.codigoTabla,
-        datosActividad.CodigoActividad,
-        datosActividad.CodigoAvance
-    )
-        setListaSurcos(prev => prev.map(item =>{
-
-        const encontrado = surcosGuardadosHoy.find((o) => o.surco == item.surco);
-
-            
-        return encontrado ? 
-        {...item, 
-            seleccionado: encontrado.seleccionado, 
-            estado:encontrado.estado,
-            avanceAcum: encontrado.avanceAcum, 
-            avanceTotalOtros: 0,
-            codEmpleado:encontrado.codEmpleado 
-        }: item;
-    }));
-
-
-}
-
-function buscarSurcosGrises(){
-
+function buscarSurcosDiaActual(){
      const surcosGuardadosHoy= realmInstance.objects("Surco").filtered(`
-        codEmpleado !=$0 AND
-        avanceAcum ==$1 AND
-        fecha >=$2 AND
-        fecha <=$3 AND
-        lote == $4 AND
-        nave == $5 AND 
-        tabla == $6 AND 
-        actividad == $7 AND  
-        avance == $8 
-
+       
+        avanceAcum ==$0 AND
+        fecha >=$1 AND
+        fecha <=$2 AND
+        lote == $3 AND
+        nave == $4 AND 
+        tabla == $5 AND 
+        actividad == $6 AND  
+        avance == $7
         `,
-        datosActividad.codigoEmpleado,
         1,
         inicioDiaCuliacan(),
         finDiaCuliacan(),
@@ -285,7 +257,7 @@ function buscarSurcosGrises(){
         datosActividad.CodigoAvance
     )
 
-    if(surcosGuardadosHoy.length > 0)
+     if(surcosGuardadosHoy.length > 0)
      
         setListaSurcos(prev => prev.map(item =>{
 
@@ -294,78 +266,30 @@ function buscarSurcosGrises(){
         return encontrado ? 
         {...item, 
             seleccionado: encontrado.seleccionado, 
-            estado:"g",
+            estado: datosActividad.codigoEmpleado === encontrado.codEmpleado ? encontrado.estado:"g",
             avanceAcum: encontrado.avanceAcum,
             avanceTotalOtros: 0,
             codEmpleado:encontrado.codEmpleado,
             fecha:   new Date(encontrado.fecha).toLocaleDateString()
         }: item;
     }));
-
 }
 
-function buscarSurcosAzules(){
-
-    const dias = datosActividad.dias_frecuencia_surcos;
-    
-    const surcosGuardadosDiasAnteriores= realmInstance.objects("Surco").filtered(`
-        codEmpleado ==$0 AND
-        avanceAcum ==$1 AND
-        fecha >=$2 AND
-        fecha <=$3 AND
-        lote == $4 AND
-        nave == $5 AND 
-        tabla == $6 AND 
-        actividad == $7 AND  
-        avance == $8 
-        `,
-        datosActividad.codigoEmpleado,
-        1,
-        restarDias(finDiaAyer(),dias),
-        finDiaAyer(),
-        datosActividad.codigoLote,
-        datosActividad.codigoNave,
-        datosActividad.codigoTabla,
-        datosActividad.CodigoActividad,
-        datosActividad.CodigoAvance
-        
-    )
-
-
-    setListaSurcos(prev => prev.map(item =>{
-
-        const encontrado = surcosGuardadosDiasAnteriores.find((o) => o.surco == item.surco);
-        
-      
-        return encontrado? 
-        {...item, 
-            seleccionado: encontrado.seleccionado, 
-            estado:"b",
-            avanceAcum: encontrado.avanceAcum, 
-            avanceTotalOtros: 0,
-            codEmpleado:encontrado.codEmpleado ,
-            fecha:   new Date(encontrado.fecha).toLocaleDateString()
-        }: item;
-    }));
-}
-
-function buscarDiasMorados(){
-
-   
+function buscarSurcosDiasAnteriores(){
     const dias =datosActividad.dias_frecuencia_surcos;
     
     const surcosGuardadosDiasAnteriores= realmInstance.objects("Surco").filtered(`
-        codEmpleado !=$0 AND
-        avanceAcum ==$1 AND
-        fecha >=$2 AND
-        fecha <=$3 AND
-        lote == $4 AND
-        nave == $5 AND 
-        tabla == $6 AND 
-        actividad == $7 AND  
-        avance == $8 
+       
+        avanceAcum ==$0 AND
+        fecha >=$1 AND
+        fecha <=$2 AND
+        lote == $3 AND
+        nave == $4 AND 
+        tabla == $5 AND 
+        actividad == $6 AND  
+        avance == $7 
         `,
-        datosActividad.codigoEmpleado,
+      
         1,
         restarDias(finDiaAyer(),dias),
         finDiaAyer(),
@@ -374,173 +298,22 @@ function buscarDiasMorados(){
         datosActividad.codigoTabla,
         datosActividad.CodigoActividad,
         datosActividad.CodigoAvance
-        
     )
-
-
+    
     setListaSurcos(prev => prev.map(item =>{
 
-         const encontrado = surcosGuardadosDiasAnteriores.find((o) => o.surco == item.surco);
+        const encontrado = surcosGuardadosDiasAnteriores.find((o) => o.surco == item.surco);
          
         return encontrado ? 
         {...item, 
             seleccionado: encontrado.seleccionado, 
-            estado:"r",
+            estado: datosActividad.codigoEmpleado === encontrado.codEmpleado? "b":"r",
             avanceAcum: encontrado.avanceAcum,
             avanceTotalOtros: 0,
             codEmpleado:encontrado.codEmpleado,
             fecha:  new Date(encontrado.fecha).toLocaleDateString()
         }: item;
     }));
-}
-
-//buscamos todos los surcos fracc filtrando
-function BuscarSurcosNaranjas(){
-
-    const dias =datosActividad.dias_frecuencia_surcos;
-    const surcosFraccion= realmInstance.objects("Surco").filtered(`
-       
-        avanceAcum >$0 AND
-        avanceAcum <$1 AND
-        fecha >=$2 AND
-        fecha <=$3 AND
-        lote == $4 AND
-        nave == $5 AND 
-        tabla == $6 AND 
-        actividad == $7 AND  
-        avance == $8 
-        `,
-        0,
-        1,
-        restarDias(finDiaAyer(),dias),
-        finDiaCuliacan(),
-        datosActividad.codigoLote,
-        datosActividad.codigoNave,
-        datosActividad.codigoTabla,
-        datosActividad.CodigoActividad,
-        datosActividad.CodigoAvance        
-    )
-
-    return surcosFraccion;
-   
-}
-
-//sirve para renderizar cada surco que sea naranja , se iteran todos los surcos para buscar coincidencias con lso surcosfracc encontrados
-function calculoAvanceFraccParaCadaSurco(cantidadSurcosTabla)
-{
-    const surcosFraccion = BuscarSurcosNaranjas();
-  
-    if(surcosFraccion.length === 0)
-    return;
-
-    const actualizaciones = {};
-    const registrosEmp = {};
-    const registrosOtrosEmp ={};
-    for(let i = 1; i<= cantidadSurcosTabla; i++)
-    {
-       // const surcosOtrsEmp = surcosFraccion.filter(surco =>  surco.codEmpleado != datosActividad.codigoEmpleado && surco.surco == i );
-       // const totalAvanceOtros = surcosOtrsEmp.reduce((acc, curr) => acc + curr.avanceAcum,0);
-       // const surcosEmpSele = surcosFraccion.filter(surco =>  surco.codEmpleado == datosActividad.codigoEmpleado && surco.surco == i);
-       
-        
-
-         const surcosOtrsEmp = surcosFraccion.filter(
-            surco => surco.codEmpleado !== datosActividad.codigoEmpleado && surco.surco == i
-        );
-        const totalAvanceOtros = surcosOtrsEmp.reduce((acc, curr) => acc + curr.avanceAcum, 0);
-
-        const surcosEmpSele = surcosFraccion.filter(
-            surco => surco.codEmpleado == datosActividad.codigoEmpleado && surco.surco == i
-        );
-        
-       
-           
-        const avanceAcum = surcosEmpSele.reduce((acc, curr) => acc + curr.avanceAcum, 0);
-       
-        // Solo guardamos surcos que realmente tienen fracción
-        if (surcosOtrsEmp.length > 0 || surcosEmpSele.length > 0) {
-                
-
-            actualizaciones[i] = { totalAvanceOtros, avanceAcum,
-                codEmpleado: surcosEmpSele.length > 0 ? datosActividad.codigoEmpleado : "",
-             };
-             registrosEmp[i] = surcosEmpSele[0];
-        
-             registrosOtrosEmp[i-1] = surcosOtrsEmp[i-1];
-        }
-    }
-
-    //datosActividad.codigoEmpleado,
-    
-   setListaSurcos(prev => prev.map(item => {
-        const datos = actualizaciones[item.surco];
-        
-        if (!datos) return item; // no es naranja, no se toca
-            
-
-        return {
-            ...item,
-            estado: Number(datos.totalAvanceOtros.toFixed(2)) ===1 ? "g":  "o",
-             seleccionado: datos.codEmpleado === datosActividad.codigoEmpleado? true: false, 
-            avanceAcum: datos.avanceAcum,
-            avanceTotalOtros: Number(datos.totalAvanceOtros.toFixed(2)),
-            codEmpleado:datos.codEmpleado
-        };
-    }));
-
-
-        
-    setListaSurcos(prev => prev.map(item => {
-    
-    const datos = actualizaciones[item.surco];
-    const datosFecha =registrosEmp[item.surco]
-   
-  
-    if (!datos ||!datosFecha) return item; 
-  
-        const fechaReg = datosFecha.fecha !== undefined?  new Date(registrosEmp[item.surco].fecha).getTime()< inicioDiaCuliacan().getTime() :false;
-        const sumAva = Number(datosFecha.avanceAcum.toFixed(2) ) + Number( datos.totalAvanceOtros.toFixed(2))
-        const avOtros = Number(datos.totalAvanceOtros.toFixed(2))
-    
-        return {
-            ...item,
-            estado:avOtros   ===1? "g":fechaReg && sumAva ===1 ? "b": "o",
-             seleccionado: datos.codEmpleado === datosActividad.codigoEmpleado? true: false, 
-            avanceAcum: datos.avanceAcum,
-            avanceTotalOtros: Number(datos.totalAvanceOtros.toFixed(2)),
-            codEmpleado:datos.codEmpleado,
-            fecha:datosFecha.fecha
-        };
-    }));
-        
-    
-    setListaSurcos(prev => prev.map(item => {
-    
-    const datos = actualizaciones[item.surco];
-    const datosFecha =registrosOtrosEmp[item.surco-1]
-   
-    if (!datos ||!datosFecha) return item; 
-  
-       // const fechaReg = datosFecha.fecha !== undefined?  new Date(registrosOtrosEmp[item.surco-1].fecha).getTime()< inicioDiaCuliacan().getTime() :false;
-        
-        const avOtros = Number(datos.totalAvanceOtros.toFixed(2))
-        
-        return {
-            ...item,
-            estado:avOtros   ===1 && datos.avanceAcum == 0?  "r":  "b",
-             seleccionado: datos.codEmpleado === datosActividad.codigoEmpleado? true: false, 
-            avanceAcum: datos.avanceAcum,
-            avanceTotalOtros: Number(datos.totalAvanceOtros.toFixed(2)),
-            codEmpleado:datos.codEmpleado,
-            fecha:datosFecha.fecha
-        };
-    }));
-    
-    
-
-
-
-
 }
 
 
@@ -583,11 +356,141 @@ function BuscarFraccionesDeSurco(avance)
      }
 }
 
+function BuscarSurcosFraccionadosPrimerRegistro(){
+    
+    
+    const dias =datosActividad.dias_frecuencia_surcos;
+    const surcosFraccion= realmInstance.objects("Surco").filtered(`
+       
+        avanceAcum >$0 AND
+        avanceAcum <$1 AND
+        fecha >=$2 AND
+        fecha <=$3 AND
+        lote == $4 AND
+        nave == $5 AND 
+        tabla == $6 AND 
+        actividad == $7 AND  
+        avance == $8 AND
+        primerFraccionado == $9
+        `,
+        0,
+        1,
+        restarDias(finDiaAyer(),dias),
+        finDiaCuliacan(),
+        datosActividad.codigoLote,
+        datosActividad.codigoNave,
+        datosActividad.codigoTabla,
+        datosActividad.CodigoActividad,
+        datosActividad.CodigoAvance,
+        true        
+    )
+
+  // console.log('primerRegistro',JSON.stringify(surcosFraccion,null,2));
+    return surcosFraccion;
+}
+
+function BuscarsurcosFraccRestantes()
+{
+    const dias =datosActividad.dias_frecuencia_surcos;
+    const surcosFraccion= realmInstance.objects("Surco").filtered(`
+       
+        avanceAcum >$0 AND
+        avanceAcum <$1 AND
+        fecha >=$2 AND
+        fecha <=$3 AND
+        lote == $4 AND
+        nave == $5 AND 
+        tabla == $6 AND 
+        actividad == $7 AND  
+        avance == $8 AND
+        primerFraccionado == $9
+        `,
+        0,
+        1,
+        restarDias(finDiaAyer(),dias),
+        finDiaCuliacan(),
+        datosActividad.codigoLote,
+        datosActividad.codigoNave,
+        datosActividad.codigoTabla,
+        datosActividad.CodigoActividad,
+        datosActividad.CodigoAvance,
+        false        
+    )
+ 
+    //console.log('registroFaltantes',JSON.stringify(surcosFraccion,null,2));
+    return surcosFraccion;
+}
+
+
+function actualizarSurcosRenderFraccion() {
+  try {
+    const surcosFrac     = BuscarSurcosFraccionadosPrimerRegistro(); // primerFraccionado: true
+    const surcosFraccRes = BuscarsurcosFraccRestantes();              // primerFraccionado: false
+
+    if (surcosFrac.length === 0) return;
+
+    // 1️⃣ Map del primer registro por surco (datos base)
+    const surcosFracMap = new Map(
+      surcosFrac.map(o => [String(o.surco), o])
+    );
+
+    // 2️⃣ Map de restantes agrupados por surco
+    const surcosFraccResMap = surcosFraccRes.reduce((map, o) => {
+      const key = String(o.surco);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(o);
+      return map;
+    }, new Map());
+
+    setListaSurcos(prev => prev.map(item => {
+      const primero = surcosFracMap.get(String(item.surco));
+
+      if (!primero) return item; // no coincide, sin cambios
+
+      // 3️⃣ Todos los registros del surco
+      const restantes = surcosFraccResMap.get(String(item.surco)) ?? [];
+      const todos     = [primero, ...restantes];
+
+      // 4️⃣ Registros y aporte del empleado seleccionado
+      const misRegistros     = todos.filter(o => o.codEmpleado === datosActividad.codigoEmpleado);
+      const miAporte         = misRegistros.reduce((acc, o) => acc + o.avanceAcum, 0);
+      const miPrimerRegistro = misRegistros[0]; // para tomar fecha y codEmpleado
+
+      // 5️⃣ Aporte de otros empleados
+      const aporteOtros = todos
+        .filter(o => o.codEmpleado !== datosActividad.codigoEmpleado)
+        .reduce((acc, o) => acc + o.avanceAcum, 0);
+
+      return {
+        ...item,
+        seleccionado:      primero.seleccionado,
+        estado:            primero.estado,
+        primerFraccionado: primero.primerFraccionado,
+        // ✅ Si yo aporté → mis datos, si no → datos del primero
+        codEmpleado:       miPrimerRegistro ? miPrimerRegistro.codEmpleado : primero.codEmpleado,
+        fecha:             miPrimerRegistro
+                            ? new Date(miPrimerRegistro.fecha).toLocaleDateString()
+                            : new Date(primero.fecha).toLocaleDateString(),
+        avanceAcum:        miAporte,        // lo que yo aporté (0 si no aporté)
+        avanceTotalOtros:  aporteOtros,     // lo que otros aportaron
+        avanceCompleto:    miAporte + aporteOtros,
+      };
+    }));
+
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+
 const restarDias = (fecha, dias) => {
   const nueva = new Date(fecha);
   nueva.setDate(nueva.getDate() - dias);
   return nueva;
 };
+
+
 
 return{
     listaSurcos,
@@ -608,3 +511,7 @@ return{
 };
 
 }
+
+
+
+

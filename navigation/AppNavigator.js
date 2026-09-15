@@ -110,11 +110,11 @@ export default function AppNavigator() {
             <Stack.Screen
                 name="ReporteAct"
                 component={ReportesAct}
-                options={({ route }) => ({
-                    headerShown: true,
-                    title: route.params?.titulo || 'Reporte por Empleados',
+                options={{
+                      headerShown: false,
+                    headerTitleAlign: 'center',
                    
-                })}
+                }}
             />
 
             <Stack.Screen
