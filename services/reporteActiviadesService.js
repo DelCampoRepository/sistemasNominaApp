@@ -1,5 +1,7 @@
 import { finDiaCuliacanFecha, inicioDiaCuliacanFecha } from "../utils/obtenerHoraCuliacan";
 
+const redondear2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
 
 
 export  function  obtenerActividadesLote(realm, params){
@@ -9,13 +11,18 @@ export  function  obtenerActividadesLote(realm, params){
         return
 
     const res=  obtenerAvancesDeActividad(params.lote,params.nave,params.tabla, params.fechaIni, params.fechaFin,realm)
-   const listActividadesTrabajadas = res.map(elemento => ({
+   const listActividadesTrabajadas = res
+  .map(elemento => ({
   codActividad:  elemento.CodigoActividad,
   codAvance:     elemento.CodigoAvance,
-  avance:        elemento.Avances,
+  avance:        avanceRealDeEmpleado(elemento, realm),
   empleadoId:    elemento.CodigoEmpleado,   // ← agrega estos
   nombreEmpleado: elemento.Nombre,  // ← según tu schema
-}));
+}))
+  // Si a un empleado le borraron/corrigieron todo su aporte (ej. desde el
+  // modal de avance por surcos), ya no cuenta como alguien que trabajó la
+  // actividad.
+  .filter(item => item.avance > 0);
 
        
 
@@ -25,7 +32,7 @@ export  function  obtenerActividadesLote(realm, params){
     const key = `${item.codActividad}-${item.codAvance}`;
 
     if (acc[key]) {
-      acc[key].avance += item.avance;
+      acc[key].avance = redondear2(acc[key].avance + item.avance);
 
       // Agregar empleado si no está ya en la lista
       const yaExiste = acc[key].empleados.some(e => e.id === item.empleadoId);
@@ -58,6 +65,32 @@ export  function  obtenerActividadesLote(realm, params){
     
 }
 
+// EmpleadoCapturado.Avances es una "foto" que solo se actualiza al guardar
+// avances; si después se borra/corrige un aporte individual en el modal de
+// avance por surcos, esa foto puede quedar vieja. Para SCO se recalcula en
+// vivo sumando los registros reales de Surco de ese mismo día.
+function avanceRealDeEmpleado(elemento, realm){
+    if (elemento.codUnidad?.trim() !== "SCO") {
+        return elemento.Avances;
+    }
+
+    const surcos = realm.objects("Surco").filtered(
+        "codEmpleado == $0 AND lote == $1 AND nave == $2 AND tabla == $3 AND actividad == $4 AND avance == $5 AND fecha >= $6 AND fecha <= $7",
+        elemento.CodigoEmpleado,
+        elemento.CodigoLote,
+        elemento.CodigoNave,
+        elemento.CodTabla,
+        elemento.CodigoActividad,
+        elemento.CodigoAvance,
+        inicioDiaCuliacanFecha(elemento.FechaCaptura),
+        finDiaCuliacanFecha(elemento.FechaCaptura)
+    );
+
+    return redondear2(
+        Array.from(surcos).reduce((acc, s) => acc + s.avanceAcum, 0)
+    );
+}
+
 function obtenerAvancesDeActividad(lote,nave,tabla,fechaIni,fechaFin,realm)
 {
     const resultados = realm
@@ -76,7 +109,9 @@ function obtenerAvancesDeActividad(lote,nave,tabla,fechaIni,fechaFin,realm)
 }
 
 function agregarJornalesYAvancesALasActividades(realm,actividadesReducidas ){
-     
+
+    if (actividadesReducidas.length === 0) return [];
+
     const filtros = actividadesReducidas.map((item, index) =>
             `(CodigoActividad == $${index * 2} AND CodigoAvance == $${index * 2 + 1})`
             ).join(' OR ');
@@ -97,10 +132,10 @@ function agregarJornalesYAvancesALasActividades(realm,actividadesReducidas ){
 
   return {
     ...item,
-    avanceSumado: match ? match.avance : 0,
-    jornales:     match ? (match.avance / item.Rendimiento).toFixed(2) : 0,
-    empleados:    match ? match.empleados : [],     
-    totalEmpleados: match ? match.empleados.length : 0, 
+    avanceSumado: match ? redondear2(match.avance).toFixed(2) : "0.00",
+    jornales:     match ? redondear2(match.avance / item.Rendimiento).toFixed(2) : "0.00",
+    empleados:    match ? match.empleados : [],
+    totalEmpleados: match ? match.empleados.length : 0,
   };
 });
 }

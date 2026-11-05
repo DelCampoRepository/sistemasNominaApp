@@ -19,6 +19,7 @@ import { SurcoDecimalSchema } from "./surcosConDecimal";
 import { ActividadesPorEmpleadoSchema } from "./ActividadesPorEmpleado";
 import { SurcoAvanceSchema } from "./SurcoAvanceSchema";
 import { CredencialesSchema } from "./CredencialesSchema";
+import { PatronSchema } from "./PatronSchema";
 //importa nave schema
 
 export const schemas = [
@@ -42,6 +43,7 @@ export const schemas = [
   SurcoDecimalSchema,
   ActividadesPorEmpleadoSchema,
   SurcoAvanceSchema,
-  CredencialesSchema
+  CredencialesSchema,
+  PatronSchema
 
 ];

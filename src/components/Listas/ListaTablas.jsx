@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Text } from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import TablaCard from "../Cards/TablaCard";
 import { getRealmInstance } from "../../../realm";
-import {  useWindowDimensions } from 'react-native';
-
-const ITEM_MARGIN = 8;
 
 export default function ListaTablas({
   setDatosEmpleadoNuevo,
@@ -24,7 +22,6 @@ export default function ListaTablas({
     setNave(datos.nave);
   }, []);
 
-  const { width, height } = useWindowDimensions();
   useEffect(() => {
     if (realmInstance != null) {
       const listaTablas = realmInstance
@@ -37,35 +34,32 @@ export default function ListaTablas({
   }, [realmInstance]);
 
   return (
-    <View style={{ flex: 1, borderRadius: 10 }}>
-      <View style={styles.headerContainer}>
-        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>SELECCIONE TABLA</Text>
-      </View>
-
+    <View style={{ height: "92%", width: "100%", borderRadius: 10 }}>
       <View style={styles.container}>
-        {tablas.length > 0 && (
-          <FlatList
-            data={tablas}
-            keyExtractor={(item) =>
-              `${item.CodigoTabla}-${item.CodigoNave}-${item.CodigoLote}`
-            }
-            renderItem={({ item }) => (
-              <TablaCard
-                item={item}
-                setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
-                setModales={setModales}
-                setDatos={setDatos}
-              />
-            )}
-            numColumns={width > 600 ? 3 : 2}
-            showsVerticalScrollIndicator={true}
-            columnWrapperStyle={{
-              margin: "auto",
-              marginTop: 40,
-              paddingHorizontal: ITEM_MARGIN
-            }}
-          />
-        )}
+        <FlatList
+          data={tablas}
+          keyExtractor={(item) =>
+            `${item.CodigoTabla}-${item.CodigoNave}-${item.CodigoLote}`
+          }
+          renderItem={({ item }) => (
+            <TablaCard
+              item={item}
+              setDatosEmpleadoNuevo={setDatosEmpleadoNuevo}
+              setModales={setModales}
+              setDatos={setDatos}
+            />
+          )}
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={tablas.length === 0 && styles.vacioContenedor}
+          ListEmptyComponent={
+            <View style={styles.vacio}>
+              <View style={styles.vacioIconCircle}>
+                <Ionicons name="grid-outline" size={30} color="#9ca3af" />
+              </View>
+              <Text style={styles.vacioTitulo}>Sin tablas disponibles</Text>
+            </View>
+          }
+        />
       </View>
     </View>
   );
@@ -73,22 +67,32 @@ export default function ListaTablas({
 
 const styles = StyleSheet.create({
   container: {
-    height: "95%",
-    backgroundColor: "#f0fff0",
-    borderWidth: 0.4,
-    borderColor: "#1fcb30",
-    borderRadius: 10
+    height: "100%",
+    width: "100%",
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    padding: 8
   },
-  headerContainer: {
-    height: "5%",
-    backgroundColor: "white",
+  vacioContenedor: {
+    flexGrow: 1,
+    justifyContent: "center"
+  },
+  vacio: {
+    alignItems: "center",
+    paddingHorizontal: 30
+  },
+  vacioIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10
   },
-  headerText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    margin: "auto"
+  vacioTitulo: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151"
   }
 });
-
-<FlatList />;

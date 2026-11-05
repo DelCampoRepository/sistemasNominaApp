@@ -8,24 +8,19 @@ import {
   StyleSheet,
   Alert
 } from "react-native";
-import { Dimensions } from "react-native";
-import {  useWindowDimensions } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
 import { exportarRealmAJSON } from "../../../utils/CreadorArchivos";
 import { id } from "date-fns/locale";
 import { ahoraTimestamp, finDiaCuliacan, formatearFechaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const ITEM_MARGIN = 7;
-const ITEM_WIDTH = SCREEN_WIDTH / 3.7 - ITEM_MARGIN * 4;
+import { marcarPendienteSincronizacion } from "../../../utils/sincronizacionEstado";
 
 export default function ActividadCard({
   item,
- 
+
   setDatosEmpleadoNuevo,
   setModales,
   datosEmpleadoNuevo
 }) {
-   const { width } = useWindowDimensions();
-
   const [seleccion, setSeleccion] = useState(false);
   const [activadadTrabajada, setActividadTrabajada] = useState(false);
   
@@ -212,6 +207,7 @@ console.log(BuscarEmpleado);
       realmInstance.write(() => {
         realmInstance.create("ActiviadesPorEmpleado", ActividaEmpleado);
         realmInstance.create("EmpleadoCapturado", datosEmpleadoNuevo,"modified");
+        marcarPendienteSincronizacion(realmInstance);
       });
 
 
@@ -238,66 +234,84 @@ console.log(BuscarEmpleado);
   }
   
   return (
-    <TouchableOpacity style={[styles.Card, { width: width > 600 ? "30%" : "44%" }]} onPress={handleOnPress}>
-      {activadadTrabajada && (
-         <Image
-                  source={require("../../../assets/check...png")}
-                  style={styles.checkIcon}
-                />
-      )}
-      <Text style={styles.nomcorto}>
-                {item.NomCortoUnidad}
-              </Text>
-      <View style={styles.imageContainer}>
+    <TouchableOpacity style={styles.Card} activeOpacity={0.75} onPress={handleOnPress}>
+      <View style={styles.iconCircle}>
         <Image
           source={require("../../../assets/herramientas.png")}
           style={styles.icon}
           resizeMode="contain"
         />
       </View>
-      <Text style={{ fontWeight: "bold", fontSize: width > 600 ? 17 : 15 }}>
-        {item.CodigoActividad}-{String(item.CodigoAvance).trim()}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "center", margin: "auto" }}>
-        {item.Descripcion.trim()}
-      </Text>
+
+      <View style={styles.textos}>
+        <Text style={styles.tituloTexto} numberOfLines={1}>
+          {item.CodigoActividad}-{String(item.CodigoAvance).trim()}
+        </Text>
+        <Text style={styles.subtexto} numberOfLines={1}>
+          {item.Descripcion.trim()} · {item.NomCortoUnidad}
+        </Text>
+      </View>
+
+      {activadadTrabajada && (
+        <View style={styles.trabajadaBadge}>
+          <Ionicons name="checkmark" size={14} color="#16a34a" />
+        </View>
+      )}
+
+      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   Card: {
-    width: ITEM_WIDTH,
-    margin: ITEM_MARGIN,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
+    flexDirection: "row",
     alignItems: "center",
-    elevation: 3,
-    borderStartColor: "green"
-  },
-  imageContainer: {
     width: "100%",
-    aspectRatio: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#ede9fe",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center"
+    marginRight: 14
   },
   icon: {
-    width: "40%",
-    height: "40%"
+    width: "55%",
+    height: "55%"
   },
-  nomcorto: {
-    width: "30%",
-    height: 23,
-    position: "absolute",
-    top: 3,
-    left: 5
+  textos: {
+    flex: 1
   },
-  checkIcon: {
-    width: 23,
-    height: 23,
-    position: "absolute",
-    top: 3,
-    right: 5
+  tituloTexto: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#111827"
+  },
+  subtexto: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2
+  },
+  trabajadaBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#dcfce7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8
   }
 });

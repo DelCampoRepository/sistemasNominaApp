@@ -2,25 +2,17 @@ import { API_URL } from "../utils/constants";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { getRealmInstance } from "../realm";
 import { Alert } from "react-native";
+import { apiFetch } from "./apiClient";
+import { asegurarConexion } from "../utils/conexion";
 
 export const login = async data => {
-  const datacon = JSON.stringify(data);
-
-  const response = await fetch(`${API_URL}/Login`, {
+  return apiFetch("/Login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: datacon
+    body: JSON.stringify(data)
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-
-    throw new Error(errorData.message || "Error en la autenticación");
-  }
-
-  return await response.json();
 };
 
 export const obtenerSemanaActiva = async () => {
@@ -39,6 +31,8 @@ export const obtenerSemanaActiva = async () => {
     }
 
     const token = userData[0].token;
+
+    if (!(await asegurarConexion())) return null;
 
     const response = await fetch(`${API_URL}/Semana`, {
       method: "GET",
@@ -63,8 +57,11 @@ export const obtenerSemanaActiva = async () => {
     return null;
   }
 };
+
 export const obtenerNavesPorUsuario = async (codigo, temporada, token) => {
   try {
+    if (!(await asegurarConexion())) return null;
+
     const response = await fetch(`${API_URL}/Naves/${codigo}/${temporada}`, {
       method: "GET",
       headers: {
@@ -92,6 +89,8 @@ export const obtenerNavesPorUsuario = async (codigo, temporada, token) => {
 export const EnviarEmpleados = async (lista, token) => {
   //console.log("📤 BODY FINAL (ARRAY):", JSON.stringify(lista, null, 2));
   //console.log(JSON.stringify(lista));
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(
     `${API_URL}/Actividades/GuardarActividadesJson`,
     {
@@ -114,6 +113,8 @@ export const obtenerTablasPorUsuario = async (
   codigoTemporada,
   token
 ) => {
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(
     `${API_URL}/Naves/ObtenerTablasDeNaves/${codigo}/${codigoTemporada}`,
     {
@@ -140,6 +141,8 @@ export const obtenerActividadesPorUsuario = async (
   codigoTemporada,
   token
 ) => {
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(
     `${API_URL}/Actividades/${codigo}/${codigoTemporada}`,
     {
@@ -165,6 +168,8 @@ export const obtenerActividadesPorUsuario = async (
 export const guardarEmpleados = async (listaEmpleados, token) => {
   console.log("Enviando empleados a guardar:", listaEmpleados);
 
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/empleados/guardar-empleados`, {
     method: "POST",
     headers: {
@@ -184,6 +189,8 @@ export const guardarEmpleados = async (listaEmpleados, token) => {
 };
 
 export const ObtenerSurcosTrabajados = async params => {
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/reportes/reporte-surcos`, {
     method: "POST",
     headers: {
@@ -204,6 +211,8 @@ export const ObtenerSurcosTrabajados = async params => {
 
 export const obtenerReporteActividades = async parametros => {
   try {
+    if (!(await asegurarConexion())) return null;
+
     const respuesta = await fetch(`${API_URL}/reportes/reporte-actividades`, {
       method: "POST",
       headers: {
@@ -246,6 +255,8 @@ export const obtenerReporteActividades = async parametros => {
 
 export const obtenerReporteEmpleados = async params => {
   // console.log("Enviando empleados a guardar:", params);
+
+  if (!(await asegurarConexion())) return null;
 
   const response = await fetch(`${API_URL}/empleados/reporte-empleados`, {
     method: "POST",
@@ -400,6 +411,9 @@ export const obtenerEmpleadosXUsuarioYFecha = async (
   cod_tabla
 ) => {
   const fec = new Date("2026-01-06");
+
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/empleados-usuario-fecha`, {
     method: "POST",
     headers: {
@@ -428,6 +442,8 @@ export const obtenerEmpleadosXUsuarioYFecha = async (
 export const guardarSurcos = async (listaSurcos, token) => {
   console.log("enviando surcos a guardar:", listaSurcos);
 
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/surcos/guardar-surcos`, {
     method: "POST",
     headers: {
@@ -446,6 +462,8 @@ export const guardarSurcos = async (listaSurcos, token) => {
 
 export const obtenerTrabajo = async (codigoTemporada, codigoJefe, fecha) => {
   //console.log("obteniendo trabajo de los empleados...", codigoTemporada, codigoJefe, fecha);
+
+  if (!(await asegurarConexion())) return null;
 
   const response = await fetch(`${API_URL}/obtener-trabajo`, {
     method: "POST",
@@ -471,6 +489,8 @@ export const obtenerTrabajo = async (codigoTemporada, codigoJefe, fecha) => {
 export const guardarJornales = async listaJornales => {
   console.log("Enviando jornales a guardar:", listaJornales);
 
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/guardar-jornales`, {
     method: "POST",
     headers: {
@@ -487,6 +507,8 @@ export const guardarJornales = async listaJornales => {
 };
 
 export const guardarActividades = async (listaActividades, token) => {
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/Actividades`, {
     method: "POST",
     headers: {
@@ -536,6 +558,8 @@ export const actualizarPalomitaActividad = async codigoActividad => {
 };
 
 export const obtenerEmpleadosXcodigo = async codigoEmpleado => {
+  if (!(await asegurarConexion())) return null;
+
   const response = await fetch(`${API_URL}/Obtener-empleado-codigo`, {
     method: "POST",
     headers: {

@@ -10,7 +10,7 @@ export const getRealmInstance = async () => {
 
         const realm = await Realm.open({
             schema: schemas,
-            schemaVersion: 2,
+            schemaVersion: 4,
             deleteRealmIfMigrationNeeded: true,
         });
 

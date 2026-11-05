@@ -4,6 +4,7 @@ import AppNavigator from "./navigation/AppNavigator";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "react-native";
 import { Proveedor } from "./Contexts/Proveedor";
+import ModalSinConexion from "./src/components/Modal/ModalSinConexion";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <NavigationContainer>
           <AppNavigator />
         </NavigationContainer>
+        <ModalSinConexion />
       </Proveedor>
     </GestureHandlerRootView>
   );

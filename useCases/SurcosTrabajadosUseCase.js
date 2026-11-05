@@ -12,9 +12,7 @@ export async function EnviarRegistrosSurcosTrabajados(realmInstance,token){
     const response = await EnviarSurcosTrabajados(listaParaenviar,token)
     console.log('sressss', response)
  }catch(error){
-    console.log("Error completo:", error);
-  console.log("Mensaje:", error.message);
-  console.log("Stack:", error.stack);
+    throw error;
  }
 }
 

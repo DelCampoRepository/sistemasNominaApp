@@ -1,5 +1,6 @@
 export const SurcoSchema = {
   name: "Surco",
+  primaryKey: "idCompuesto",
   properties: {
     idCompuesto:"string",
     surco: "string",

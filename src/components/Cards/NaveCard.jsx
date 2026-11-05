@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
-import { Dimensions } from "react-native";
-import {  useWindowDimensions } from 'react-native';
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const ITEM_MARGIN = 10;
-const ITEM_WIDTH = SCREEN_WIDTH / 3 - ITEM_MARGIN * 4;
+import { Ionicons } from "@expo/vector-icons";
 
 const IMAGENES = {
   nave: require("../../../assets/nave2.png"),
@@ -20,7 +16,6 @@ export default function NaveCard({
 }) {
   const fuenteImagen = IMAGENES[icono] || IMAGENES.nave;
 
-   const { width } = useWindowDimensions();
   const handleOnPress = () => {
     setDatosEmpleadoNuevo((prev) => ({
       ...prev,
@@ -44,40 +39,65 @@ export default function NaveCard({
   };
 
   return (
-    <TouchableOpacity style={[styles.Card, { width: width > 400 ? "34%" : "44%" }]} onPress={handleOnPress}>
-      <View style={styles.imageContainer}>
+    <TouchableOpacity style={styles.Card} activeOpacity={0.75} onPress={handleOnPress}>
+      <View style={styles.iconCircle}>
         <Image source={fuenteImagen} style={styles.icon} resizeMode="contain" />
       </View>
 
-      <Text style={{ fontWeight: "bold", fontSize: width > 400 ? 12 : 9.5 }}>
-        {item.CodigoLote}-{String(item.DescripcionLote).trim()}
-      </Text>
-      <Text style={{ fontSize: width > 400 ? 11 : 9.5 }}>
-        {item.DescripcionNave}
+      <View style={styles.textos}>
+        <Text style={styles.tituloTexto} numberOfLines={1}>
+          {item.CodigoLote}-{String(item.DescripcionLote).trim()}
         </Text>
+        <Text style={styles.subtexto} numberOfLines={1}>
+          {item.DescripcionNave}
+        </Text>
+      </View>
+
+      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
     </TouchableOpacity>
   );
 }
-//source={require("../../../assets/nave2.png")}
+
 const styles = StyleSheet.create({
   Card: {
-    
-    margin: ITEM_MARGIN,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
+    flexDirection: "row",
     alignItems: "center",
-    elevation: 3,
-    borderStartColor: "green"
-  },
-  imageContainer: {
     width: "100%",
-    aspectRatio: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#dcfce7",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center"
+    marginRight: 14
   },
   icon: {
-    width: "40%",
-    height: "40%"
+    width: "55%",
+    height: "55%"
+  },
+  textos: {
+    flex: 1
+  },
+  tituloTexto: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#111827"
+  },
+  subtexto: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2
   }
 });

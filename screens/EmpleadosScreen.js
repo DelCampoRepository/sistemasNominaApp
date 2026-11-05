@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 //import { obtenerEmpleadosPorTemporada } from '../services/Empleados';
 import { getRealmInstance } from "../realm";
+import { marcarPendienteSincronizacion } from "../utils/sincronizacionEstado";
 
 //import { da } from "date-fns/locale";
 
@@ -342,6 +343,7 @@ useEffect(
           //GUARDAMOS EL EMPLEADO EN EL REAL
           realmInstance.write(() => {
             realmInstance.create("EmpleadoCapturado", datosEmp);
+            marcarPendienteSincronizacion(realmInstance);
           });
 
           setDatosModalEmpleado({
@@ -392,10 +394,7 @@ useEffect(
     setMostrarModalAvances(false);
     
     realmInstance.write(() => {
-      const sync = realmInstance.objectForPrimaryKey("Sincronizar", 0);
-      if (sync) {
-        sync.sincronizado = true;
-      }
+      marcarPendienteSincronizacion(realmInstance);
     });
 
       setTerminaLoad(false);
@@ -1378,6 +1377,8 @@ const VerificarTopeJornalEmpleado =() =>{
           empleado.surcos = surcosSeleccionados;
           empleado.tieneSurcos = surcosSeleccionados.length > 0;
         }
+
+        marcarPendienteSincronizacion(realmInstance);
 
         //   navigation.navigate("pantallaTablaDatos");
       });

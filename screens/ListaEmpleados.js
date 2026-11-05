@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
 import { getRealmInstance } from "../realm";
 
 import CustomModal from "../src/components/Modal/MotalComponent";
@@ -8,7 +8,6 @@ import ListaEmpleadosAgregados from "../src/components/Listas/ListaEmpleadosAgre
 import ModalAgregarAvance from "../src/components/Modal/ModalAgregarAvance";
 import ModalSurcos from "../src/components/Modal/ModalSurcos";
 import {  useWindowDimensions } from 'react-native';
-import CustomTitle from "../src/components/CustomTitle";
 import CustomOptions from "../src/components/CustomOptions";
 import { finDiaCuliacan, inicioDiaCuliacan } from "../utils/obtenerHoraCuliacan";
 
@@ -161,9 +160,16 @@ const ListaEmpleados = ({ route }) => {
     return fechaFormateada;
   };
   return (
-    
+
     <View style={styles.mainContainer}>
-      <CustomTitle title="Actividades por empleado" style={{ elevation: 0 }} />
+      <StatusBar barStyle="light-content" backgroundColor="#16a34a" />
+      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 18 : 18 }]}>
+        <Text style={styles.headerTexto}>Actividades por empleado</Text>
+        <Text style={styles.headerSubtexto}>
+          {ListaEmpleadosEnRealm.length} {ListaEmpleadosEnRealm.length === 1 ? "empleado agregado hoy" : "empleados agregados hoy"}
+        </Text>
+      </View>
+
       <ModalBuscarEmpleado
         visible={modales.modalEmpleados}
         setModales={setModales}
@@ -199,6 +205,8 @@ const ListaEmpleados = ({ route }) => {
         />
       }
 
+        {realmInstance !== null && <CustomOptions setModales={setModales} realmInstance={realmInstance}/>}
+
       {Object.keys(datosActividad).length > 0 &&
         datosActividad.NomCortoUnidad === "SCO" &&
         realmInstance !== null &&
@@ -210,8 +218,6 @@ const ListaEmpleados = ({ route }) => {
           datosEmpleadoSeleccionado={datosEmpleadoSeleccionado}
           realmInstance={realmInstance}
         />}
-
-        {realmInstance !== null && <CustomOptions setModales={setModales} realmInstance={realmInstance}/>}
 
       <View/>
     </View>
@@ -260,6 +266,24 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     backgroundColor: "#f1fff1",
     zIndex: -2
+  },
+  header: {
+    backgroundColor: "#16a34a",
+    paddingHorizontal: 22,
+    paddingBottom: 26,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    width: "100%"
+  },
+  headerTexto: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold"
+  },
+  headerSubtexto: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 13,
+    marginTop: 4
   }
 });
 

@@ -45,59 +45,100 @@ export default function EmpleadoCard({
   };
 
    const { width } = useWindowDimensions();
+
+   const esPendiente = item.estado === 0 || item.estado === 3;
+   const esConfirmado = item.estado === 1;
+
+   const colorAcento = esPendiente ? "#9ca3af" : esConfirmado ? "#16a34a" : "#dc2626";
+   const colorFondoSuave = esPendiente ? "#f3f4f6" : esConfirmado ? "#dcfce7" : "#fee2e2";
+   const etiquetaEstado = esPendiente ? "Pendiente" : esConfirmado ? "Sincronizado " : "No sincronizado";
+
   return (
     <Pressable
-      style={[styles.Card,{ 
-        backgroundColor: item.estado ===0  || item.estado ===3? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d", 
-         borderColor: item.estado ===0|| item.estado ===3? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#de0202",
-        width: width > 600 ? "25%" : "40%" }]}
+      style={[styles.Card, { width: width > 600 ? "25%" : "44%" }]}
       onPress={handleOnPress}
       onLongPress={handleLongPress}
     >
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, { backgroundColor: colorFondoSuave }]}>
         <Image
           source={require("../../../assets/usuario2.png")}
           style={styles.icon}
           resizeMode="contain"
         />
       </View>
-      <Text style={{ fontWeight: "bold", fontSize: 14 }}>
+
+      <Text style={styles.codigo} numberOfLines={1}>
         {item.CodigoEmpleado}
       </Text>
-      <Text style={styles.textSecundario}>{item.Nombre}</Text>
-        <Text style={styles.textSecundario}>{formatearFechaCuliacan(item.FechaCaptura)}</Text>
+      <Text style={styles.textSecundario} numberOfLines={1}>{item.Nombre}</Text>
+      <Text style={styles.textFecha}>{formatearFechaCuliacan(item.FechaCaptura)}</Text>
+
+      <View style={[styles.badge, { backgroundColor: colorFondoSuave }]}>
+        <View style={[styles.badgeDot, { backgroundColor: colorAcento }]} />
+        <Text style={[styles.badgeTexto, { color: colorAcento }]}>{etiquetaEstado}</Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   Card: {
-  
     margin: ITEM_MARGIN,
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 18,
+    padding: 14,
     alignItems: "center",
     elevation: 3,
-    
-    borderWidth:3,
-    borderColor:"#00eade",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8
   },
   imageContainer: {
-    width: "100%",
+    width: "70%",
     aspectRatio: 1,
+    borderRadius: 999,
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    marginBottom: 8
   },
   icon: {
-    width: "40%",
-    height: "40%"
+    width: "45%",
+    height: "45%"
+  },
+  codigo: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#111827"
   },
   textSecundario: {
     fontSize: 12,
+    color: "#374151",
     textAlign: "center",
-    margin: "auto",
-    paddingVertical: 10,
-    
+    marginTop: 2
+  },
+  textFecha: {
+    fontSize: 11,
+    color: "#9ca3af",
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: 8
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    gap: 5
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3
+  },
+  badgeTexto: {
+    fontSize: 11,
+    fontWeight: "700"
   }
 });

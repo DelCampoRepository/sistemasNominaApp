@@ -1,6 +1,7 @@
 import { Alert } from "react-native";
 import Realm, { UpdateMode } from "realm";
 import { ahoraTimestamp, finDiaAyer, finDiaCuliacan, formatearFechaCuliacan, inicioDiaAyer, inicioDiaCuliacan } from "../utils/obtenerHoraCuliacan";
+import { marcarPendienteSincronizacion } from "../utils/sincronizacionEstado";
 
 
 
@@ -83,6 +84,8 @@ if (registrosHoy.length > 0) {
       },
        Realm.UpdateMode.Modified);
     });
+
+    marcarPendienteSincronizacion(realmInstance);
   });
 }
     

@@ -2,6 +2,7 @@
 import { ObtenerActividades } from "../services/ObtenerActividadesService";
 export async function syncActividades(realmInstance, codigo, temporada, token) {
 
+  console.log('datos',codigo, temporada, token)
     try{
             const respuesta = await ObtenerActividades(codigo, temporada, token);
             if(respuesta.estado !== 1)
@@ -50,8 +51,7 @@ async function guardarActividadesEnRealm(realmInstance, data) {
                   NomCortoUnidad: act.nomCortoUnidad,
                   NomCompletoUnidad: act.nomCompletoUnidad,
                   limiteMaximoCaptura: String(act.limiteMaximoCaptura),
-                  dias_frecuencia_surcos:act.dias_frecuencia_surcos,
-                  ReinicioTemp : act.reinicioTemp? 1:0
+                  dias_frecuencia_surcos:act.dias_frecuencia_surcos
                 },
                 "modified"
               );

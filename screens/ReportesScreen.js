@@ -5,19 +5,21 @@ import {
   View,
   Image,
   TouchableOpacity,
-  Alert
+  Alert,
+  ScrollView,
+  StatusBar,
+  Platform
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import DropdownComponent from "../components/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import calendario from "../assets/calendario.png";
 import agricultor from "../assets/agricultor.png";
 import proteccion from "../assets/proteccion.png";
 
 import {  useWindowDimensions } from 'react-native';
 import { Dimensions } from "react-native";
 import CustomOptions from "../src/components/CustomOptions";
-import CustomTitle from "../src/components/CustomTitle";
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const ITEM_MARGIN = 8;
 const ITEM_WIDTH = SCREEN_WIDTH / 3 - ITEM_MARGIN * 2;
@@ -403,207 +405,270 @@ const ReportesScreen = () => {
   const [modales, setModales] = useState({});
   return (
     <View style={estilos.contenedor}>
-        <View style={{height:"10%", display:"flex", justifyContent:"flex-start", alignItems:"center"}}>
-          <CustomTitle title="- Reportes -" />
-      </View>
-     
-    <View style={{paddingTop:30, width:"100%"}}>
-          
-      
-      <DropdownComponent
-          label="Naves"
-          placeholder="Seleccione una nave"
-          options={navesRealm}
-          onChange={item => {
-            if (item) {
-              setLoteSeleccionado(item.lote);
-              setNaveSeleccionada(item.value);
-            } else {
-              setNaveSeleccionada(null);
-            }
-          }}
-          selectedValue={naveSeleccionada}
-          style={{ backgroundColor: "white", borderRadius: 10 }}
-        />
-      <DropdownComponent
-
-        label="Tabla"
-        placeholder="Seleccione una tabla"
-        options={tablasFiltradas}
-        onChange={item => {
-          if (item) {
-            setTablaSeleccionada(item.value);
-          } else {
-            setTablaSeleccionada(null);
-          }
-        }}
-        selectedValue={tablaSeleccionada}
-        style={{ backgroundColor: "white", borderRadius: 10 }}
-      />
-
-      <View style={{ flexDirection: width > 600 ? "row" : "column", justifyContent: "space-between" }}>
-        <TouchableOpacity
-          onPress={() => setMostrarFechaInicio(true)}
-          style={[estilos.selectorFecha, { width: width > 600 ? "45%" : "100%" }]}
-        >
-          <Text style={estilos.etiquetaFecha}>Fecha Inicial</Text>
-          <View style={estilos.filaFecha}>
-            <Text style={[estilos.textoFecha, { fontSize: width > 600 ? 16 : 13 }]}>
-              {fechaInicio ? formatearFecha(fechaInicio) : "Seleccione fecha"}
-            </Text>
-            <Image
-              source={calendario}
-              style={estilos.iconoCalendario}
-              resizeMode="center"
-            />
-          </View>
-          {mostrarFechaInicio &&
-            <DateTimePicker
-              value={fechaInicio || new Date()}
-              mode="date"
-              display="default"
-              onChange={(evento, fechaSeleccionada) => {
-                setMostrarFechaInicio(false);
-                if (fechaSeleccionada) setFechaInicio(fechaSeleccionada);
-              }}
-            />}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setMostrarFechaFin(true)}
-          style={[estilos.selectorFecha, { width: width > 600 ? "45%" : "100%" }]}
-        >
-          <Text style={estilos.etiquetaFecha}>Fecha Final</Text>
-          <View style={estilos.filaFecha}>
-            <Text style={[estilos.textoFecha, { fontSize: width > 600 ? 16 : 14 }]}>
-              {fechaFin ? formatearFecha(fechaFin) : "Seleccione fecha"}
-            </Text>
-            <Image
-              source={calendario}
-              style={estilos.iconoCalendario}
-              resizeMode="center"
-            />
-          </View>
-          {mostrarFechaFin &&
-            <DateTimePicker
-              value={fechaFin || new Date()}
-              mode="date"
-              display="default"
-              onChange={(evento, fechaSeleccionada) => {
-                setMostrarFechaFin(false);
-                if (fechaSeleccionada) setFechaFin(fechaSeleccionada);
-              }}
-            />}
-        </TouchableOpacity>
+      <StatusBar barStyle="light-content" backgroundColor="#16a34a" />
+      <View style={[estilos.header, { paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 18 : 18 }]}>
+        <Text style={estilos.headerTexto}>Reportes</Text>
+        <Text style={estilos.headerSubtexto}>Genera reportes por actividad o por empleado</Text>
       </View>
 
-      <View style={[estilos.contenedorBotones,{flexDirection: width > 600 ? "row" : "column"}]}>
-        <TouchableOpacity
-          onPress={manejarReporteActividades}
-          style={[estilos.botonReporte, { width: width > 600 ? "45%" : "100%" , flexDirection: width > 600 ? "column" : "row" }]}
-        >
-          <Image
-            source={proteccion}
-            style={{width:width > 600 ? 90 : 60, height: width > 600 ? 90 : 70, marginRight: width > 600 ? 0 : 20}}
-            resizeMode="contain"
+      <ScrollView
+        style={{ width: "100%" }}
+        contentContainerStyle={estilos.scrollContenido}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={estilos.filtroCard}>
+          <Text style={estilos.filtroCardTitulo}>Ubicación</Text>
+
+          <DropdownComponent
+            label="Naves"
+            placeholder="Seleccione una nave"
+            options={navesRealm}
+            onChange={item => {
+              if (item) {
+                setLoteSeleccionado(item.lote);
+                setNaveSeleccionada(item.value);
+              } else {
+                setNaveSeleccionada(null);
+              }
+            }}
+            selectedValue={naveSeleccionada}
+            style={{ backgroundColor: "white", borderRadius: 10 }}
           />
-          <Text style={estilos.textoBoton}>Reporte por Actividades</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={manejarReporteEmpleados}
-          style={[estilos.botonReporte, { width: width > 600 ? "45%" : "100%", flexDirection: width > 600 ? "column" : "row" }]}
-        >
-          <Image
-            source={agricultor}
-            style={{width:width > 600 ? 90 : 60, height: width > 600 ? 90 : 70, marginRight: width > 600 ? 0 : 20}}
-            resizeMode="contain"
+          <DropdownComponent
+            label="Tabla"
+            placeholder="Seleccione una tabla"
+            options={tablasFiltradas}
+            onChange={item => {
+              if (item) {
+                setTablaSeleccionada(item.value);
+              } else {
+                setTablaSeleccionada(null);
+              }
+            }}
+            selectedValue={tablaSeleccionada}
+            style={{ backgroundColor: "white", borderRadius: 10 }}
           />
-          <Text style={estilos.textoBoton}>Reporte por Empleados</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-     <CustomOptions setModales={setModales}  visible={false} />
+        </View>
+
+        <View style={estilos.filtroCard}>
+          <Text style={estilos.filtroCardTitulo}>Periodo</Text>
+
+          <View style={{ flexDirection: width > 600 ? "row" : "column", gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => setMostrarFechaInicio(true)}
+              activeOpacity={0.8}
+              style={[estilos.selectorFecha, { width: width > 600 ? "48%" : "100%" }]}
+            >
+              <View style={estilos.fechaIconCircle}>
+                <Ionicons name="calendar-outline" size={20} color="#16a34a" />
+              </View>
+              <View>
+                <Text style={estilos.etiquetaFecha}>Fecha inicial</Text>
+                <Text style={estilos.textoFecha}>
+                  {fechaInicio ? formatearFecha(fechaInicio) : "Seleccione fecha"}
+                </Text>
+              </View>
+              {mostrarFechaInicio &&
+                <DateTimePicker
+                  value={fechaInicio || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(evento, fechaSeleccionada) => {
+                    setMostrarFechaInicio(false);
+                    if (fechaSeleccionada) setFechaInicio(fechaSeleccionada);
+                  }}
+                />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setMostrarFechaFin(true)}
+              activeOpacity={0.8}
+              style={[estilos.selectorFecha, { width: width > 600 ? "48%" : "100%" }]}
+            >
+              <View style={estilos.fechaIconCircle}>
+                <Ionicons name="calendar-outline" size={20} color="#16a34a" />
+              </View>
+              <View>
+                <Text style={estilos.etiquetaFecha}>Fecha final</Text>
+                <Text style={estilos.textoFecha}>
+                  {fechaFin ? formatearFecha(fechaFin) : "Seleccione fecha"}
+                </Text>
+              </View>
+              {mostrarFechaFin &&
+                <DateTimePicker
+                  value={fechaFin || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(evento, fechaSeleccionada) => {
+                    setMostrarFechaFin(false);
+                    if (fechaSeleccionada) setFechaFin(fechaSeleccionada);
+                  }}
+                />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={estilos.seccionTitulo}>Generar reporte</Text>
+
+        <View style={[estilos.contenedorBotones, { flexDirection: width > 600 ? "row" : "column" }]}>
+          <TouchableOpacity
+            onPress={manejarReporteActividades}
+            activeOpacity={0.85}
+            style={[estilos.botonReporte, { width: width > 600 ? "48%" : "100%" }]}
+          >
+            <View style={[estilos.botonIconCircle, { backgroundColor: "#fef3c7" }]}>
+              <Image source={proteccion} style={estilos.botonIcono} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={estilos.textoBoton}>Reporte por Actividades</Text>
+              <Text style={estilos.textoBotonSub}>Avance por lote y tabla</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={manejarReporteEmpleados}
+            activeOpacity={0.85}
+            style={[estilos.botonReporte, { width: width > 600 ? "48%" : "100%" }]}
+          >
+            <View style={[estilos.botonIconCircle, { backgroundColor: "#e0f2fe" }]}>
+              <Image source={agricultor} style={estilos.botonIcono} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={estilos.textoBoton}>Reporte por Empleados</Text>
+              <Text style={estilos.textoBotonSub}>Actividades capturadas</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      <CustomOptions setModales={setModales} visible={false} />
     </View>
   );
 };
 
 const estilos = StyleSheet.create({
-  contenedor: {  
-    flex: 1,  
-    paddingHorizontal:20,  
+  contenedor: {
+    flex: 1,
     backgroundColor: "#f0fff0",
-    paddingTop :5,
-    zIndex:0,
-     alignItems: "center",
+    alignItems: "center",
   },
-  contenedorDropdown: {
-    marginBottom: 20
+  header: {
+    backgroundColor: "#16a34a",
+    paddingHorizontal: 22,
+    paddingBottom: 26,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    width: "100%",
+  },
+  headerTexto: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  headerSubtexto: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  scrollContenido: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 100,
+    width: "100%",
+  },
+  filtroCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  filtroCardTitulo: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#6b7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  seccionTitulo: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 12,
+    marginTop: 4,
   },
   contenedorBotones: {
-    
+    justifyContent: "space-between",
+    gap: 12,
   },
-
   botonReporte: {
     backgroundColor: "white",
-    marginHorizontal:"auto",
-    borderRadius: 22,
-    elevation: 7,
+    borderRadius: 18,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
-    marginVertical: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 3,
-    borderWidth: 0.5
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-
- 
-  imagenBoton2: {
-    width: 90,
-    height: 90
+  botonIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  botonIcono: {
+    width: 32,
+    height: 32,
   },
   textoBoton: {
-    fontSize: 15,
-    textAlign: "center",
-    color: "gray",
+    fontSize: 14,
+    color: "#111827",
     fontWeight: "bold",
-    marginTop: 10
+  },
+  textoBotonSub: {
+    fontSize: 12,
+    color: "#9ca3af",
+    marginTop: 2,
   },
   selectorFecha: {
-  
-    marginTop: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderRadius: 10
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9fafb",
+    borderRadius: 14,
+    padding: 12,
+  },
+  fechaIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#dcfce7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
   },
   etiquetaFecha: {
-    width: 100,
-    position: "relative",
-    top: -10,
-    marginHorizontal:'auto' ,
-    zIndex: 1,
-    backgroundColor: "#f0fff0",
-    fontWeight: "bold",
-    color: "black",
-    textAlign: "center"
-  },
-  filaFecha: {
-    flexDirection: "row",
-    justifyContent: "center"
+    fontSize: 11,
+    color: "#9ca3af",
+    fontWeight: "600",
   },
   textoFecha: {
-    textDecorationLine: "underline",
-    textAlign: "center",
-    paddingTop: 5,
-    paddingBottom: 15,
-    color: "#333",
-    paddingLeft: 5,
-   
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+    marginTop: 2,
   },
-  iconoCalendario: {
-    marginLeft: 10,
-    width: 33,
-    height: 33
-  }
 });
 
 

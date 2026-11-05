@@ -1,110 +1,118 @@
 import React from 'react'
-import { View, Alert, StyleSheet,TouchableOpacity } from 'react-native';
-import {  useWindowDimensions } from 'react-native';
+import { View, Alert, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { ObtenerEmpleadosDiaAnteriorRealm } from '../../useCases/DuplicarEmpleadosDiaAnterior';
 
-export default function CustomOptions({ visible = true, setModales, realmInstance}) {
+export default function CustomOptions({ visible = true, setModales, realmInstance }) {
   const { width } = useWindowDimensions();
-   const navigator = useNavigation(); 
+  const navigator = useNavigation();
 
-   const   iconSize = width > 600 ? 45 : 30; // Ajusta el tamaño del ícono según el ancho de la pantalla
-const confirmarCerrarSesion = () => {
-        Alert.alert(
-            'Cerrar Sesión',
-            '¿Estás seguro de que deseas cerrar sesión?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Cerrar Sesión',
-                    onPress: () => {
-                        navigator.navigate('Login');
-                    },
-                    style: 'destructive',
-                },
-            ],
-        );
-    };
+  const esTablet = width > 600;
+  const iconSize = esTablet ? 26 : 20;
+  const circuloSize = esTablet ? 56 : 44;
 
-styles.container
+  const confirmarCerrarSesion = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que deseas cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar Sesión',
+          onPress: () => {
+            navigator.navigate('Login');
+          },
+          style: 'destructive',
+        },
+      ],
+    );
+  };
+
+  const BotonOpcion = ({ icono, colorIcono, colorFondo, onPress }) => (
+    <TouchableOpacity
+      style={[
+        styles.boton,
+        { width: circuloSize, height: circuloSize, borderRadius: circuloSize / 2, backgroundColor: colorFondo }
+      ]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <Ionicons name={icono} size={iconSize} color={colorIcono} />
+    </TouchableOpacity>
+  );
+
   return (
-    
-    <View  style={[styles.container,{width: width >600 ? 350:250, height: width > 600 ? 70:50}]}>
-     <TouchableOpacity
-             style={[styles.botonAgregar,{}]}
-             onPress={() => {
-                navigator.goBack();
-             }}
-      >
-             <Ionicons name="arrow-back" size={iconSize} color="#959595" />
-           </TouchableOpacity>
-           
-        {visible &&
-           <TouchableOpacity
-             style={[styles.botonAgregar,{width:width > 600 ? 60:45,}]}
-             onPress={() => {
-                 setModales(prev => ({
-            ...prev,
-            modalEmpleados: true
-          }));
-             }}
-           >
-             <Ionicons name="person-add" size={iconSize} color="#959595" />
-           </TouchableOpacity>
-           
-        }
-        {visible &&
-           <TouchableOpacity
-             style={[styles.botonAgregar,{width:width > 600 ? 60:45,}]}
-             onPress={() => {
-              console.log("boton");
+    <View style={styles.contenedorFlotante} pointerEvents="box-none">
+      <View style={styles.pill}>
+        <BotonOpcion
+          icono="arrow-back"
+          colorIcono="#6b7280"
+          colorFondo="#f3f4f6"
+          onPress={() => navigator.goBack()}
+        />
+
+        {visible && (
+          <BotonOpcion
+            icono="person-add"
+            colorIcono="#16a34a"
+            colorFondo="#dcfce7"
+            onPress={() => {
+              setModales(prev => ({
+                ...prev,
+                modalEmpleados: true
+              }));
+            }}
+          />
+        )}
+
+        {visible && (
+          <BotonOpcion
+            icono="duplicate-outline"
+            colorIcono="#2563eb"
+            colorFondo="#dbeafe"
+            onPress={() => {
               ObtenerEmpleadosDiaAnteriorRealm(realmInstance);
-             }}
-           >
-             <Ionicons name="duplicate-outline" size={iconSize} color="#959595" />
-           </TouchableOpacity>
-        }
-           <TouchableOpacity
-             style={[styles.botonAgregar,{}]}
-             onPress={() => {
-               confirmarCerrarSesion();
-             }}
-           >
-             <Ionicons name="exit" size={iconSize} color="#959595" />
-           </TouchableOpacity>
+            }}
+          />
+        )}
+
+        <BotonOpcion
+          icono="exit"
+          colorIcono="#dc2626"
+          colorFondo="#fee2e2"
+          onPress={confirmarCerrarSesion}
+        />
+      </View>
     </View>
-  )
- 
+  );
 }
 
 const styles = StyleSheet.create({
-
-  container:{
-    
-   
-    backgroundColor:"white",
-    bottom: 5,
+  contenedorFlotante: {
     position: 'absolute',
-    elevation:5,
-    borderRadius: 50,
+    bottom: 16,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 0
+  },
+  pill: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  
-    zIndex: -1
-  }, 
-  botonAgregar: {
-   
-   
-    borderRadius: "50%",
-    
-    height:"90%",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    marginVertical:"auto"
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'white',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8
+  },
+  boton: {
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 });

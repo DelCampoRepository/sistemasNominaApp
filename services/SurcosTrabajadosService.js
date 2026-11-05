@@ -24,29 +24,52 @@ export function consultarSurcosTrabajadosParaReporte(params,realm){
     
     const surcosAgrupados = Object.values(
         resultado.reduce((acc, item) => {
-        
+
           if (!acc[item.surco]) {
             acc[item.surco] = {
               surco: item.surco,
               avanceTotal: 0,
               cantidadEmpleados: 0,
               trabajadoTotal: false,
-              registros: []
+              registros: [],
+              porEmpleado: {}
             };
           }
-      
-          acc[item.surco].avanceTotal += item.avanceAcum;
-          acc[item.surco].trabajadoTotal ||= item.trabajadoTotal;
-          acc[item.surco].cantidadEmpleados++;
-      
-          acc[item.surco].registros.push(item);
-      
+
+          const grupo = acc[item.surco];
+          const empleado = realm.objectForPrimaryKey("Empleado", item.codEmpleado);
+          const nombreEmpleado = empleado?.Nombre ?? "Desconocido";
+
+          grupo.avanceTotal += item.avanceAcum;
+          grupo.trabajadoTotal ||= item.trabajadoTotal;
+
+          grupo.registros.push({
+            codEmpleado: item.codEmpleado,
+            nombreEmpleado,
+            fecha: item.fecha,
+            avanceAcum: item.avanceAcum
+          });
+
+          if (!grupo.porEmpleado[item.codEmpleado]) {
+            grupo.porEmpleado[item.codEmpleado] = {
+              codEmpleado: item.codEmpleado,
+              nombreEmpleado,
+              avanceTotal: 0
+            };
+            grupo.cantidadEmpleados++;
+          }
+          grupo.porEmpleado[item.codEmpleado].avanceTotal += item.avanceAcum;
+
           return acc;
-      
+
         }, {})
 
-        
+
 );
+
+surcosAgrupados.forEach(grupo => {
+  grupo.porEmpleado = Object.values(grupo.porEmpleado);
+});
 
 return surcosAgrupados
 

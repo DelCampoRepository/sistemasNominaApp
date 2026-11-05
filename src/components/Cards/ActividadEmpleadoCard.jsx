@@ -8,16 +8,8 @@ import {
   StyleSheet,
   Alert
 } from "react-native";
-import { Dimensions } from "react-native";
-import {  useWindowDimensions } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { ahoraTimestamp, expiracionDosHoras, finDiaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const ITEM_MARGIN = 7;
-
-const divisor = SCREEN_WIDTH <= 610 ? 2.6 : 3.7;
-const multipli = SCREEN_WIDTH <= 610 ? 2 : 4;
-const ITEM_WIDTH = SCREEN_WIDTH / divisor - ITEM_MARGIN * multipli;
 
 export default function ActividadEmpleadoCard({
   item,
@@ -28,15 +20,52 @@ export default function ActividadEmpleadoCard({
   realmInstance
 }) {
 
-  const { width } = useWindowDimensions();
-     const   iconSize = width > 600 ? 45 : 30; // Ajusta el tamaño del ícono según el ancho de la pantalla
   const [seleccion, setSeleccion] = useState({
     acIni: true,
     actFin: true
   });
- 
+
   //console.log(item.horaInicioActividad);
   useEffect(() => {}, [item]);
+
+  // El avance por surco (SCO) se calcula consultando Realm en cada render
+  // (ver abajo), pero esa consulta no se vuelve a ejecutar sola si el dato
+  // cambia desde otra pantalla (ej. al borrar un aporte en el modal de
+  // avance por surcos). Este listener fuerza un re-render de la tarjeta
+  // cuando cambian los registros de Surco de este empleado/actividad.
+  const [, forzarActualizacion] = useState(0);
+
+  useEffect(() => {
+    if (item.NomCortoUnidad?.trim() !== "SCO" || !realmInstance) return;
+
+    const resultados = realmInstance
+      .objects("Surco")
+      .filtered(
+        "codEmpleado == $0 AND lote == $1 AND nave == $2 AND tabla == $3 AND actividad == $4 AND avance == $5",
+        item.codigoEmpleado,
+        item.codigoLote,
+        item.codigoNave,
+        item.codigoTabla,
+        item.CodigoActividad,
+        item.CodigoAvance
+      );
+
+    const listener = () => forzarActualizacion(n => n + 1);
+    resultados.addListener(listener);
+
+    return () => {
+      resultados.removeListener(listener);
+    };
+  }, [
+    realmInstance,
+    item.NomCortoUnidad,
+    item.codigoEmpleado,
+    item.codigoLote,
+    item.codigoNave,
+    item.codigoTabla,
+    item.CodigoActividad,
+    item.CodigoAvance
+  ]);
 
   const obtenerFechaYHora = () => {
     const ahora = new Date();
@@ -425,199 +454,275 @@ export default function ActividadEmpleadoCard({
 
     return `${horas}:${minutos} ${ampm}`;
   }
-  return (
-    <TouchableOpacity 
-    style={[styles.Card,{
-        backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d", 
-         borderColor: item.estado ===0? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#de0202",
-        width: width > 400 ? "30%": "45%"
-      }]} 
-      onPress={handleOnPress}
-    >
-      {/*TIMER INICIAR PLAY ICONO */}
-      {item.horaInicioActividad === null && seleccion.acIni && (
-        <TouchableOpacity
-          style={{
-            width: 50,
-            position: "absolute",
-            top: -10,
-            right: -2,
-            borderRadius: 100,
-            height: 50,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#fffffffb",
-            elevation: 5
-          }}
-          onPress={handleIniciar}
-        >
-          <Image
-            source={require("../../../assets/timer-play.png")}
-            style={styles.cardButton}
-          />
-        </TouchableOpacity>
-      )}
+  const esPendiente = item.estado === 0;
+  const esConfirmado = item.estado === 1;
+  const colorAcento = esPendiente ? "#9ca3af" : esConfirmado ? "#16a34a" : "#dc2626";
+  const colorFondoSuave = esPendiente ? "#f3f4f6" : esConfirmado ? "#dcfce7" : "#fee2e2";
+  const etiquetaEstado = esPendiente ? "Pendiente" : esConfirmado ? "Sincronizado" : "No sincronizado";
+  const bloqueado = validarBloquead();
+  const puedeIniciar = item.horaInicioActividad === null && seleccion.acIni;
+  const puedeFinalizar = item.limiteMaximoDeCaptura === null && item.horaInicioActividad !== null;
 
-      {/*TIMER FINALIZAR CHECK  ICONO*/}
-      { 
-        item.limiteMaximoDeCaptura === null &&  item.horaInicioActividad !== null  &&(
-          <TouchableOpacity
-            onPress={handleFinalzar}
-            style={{
-              width: 50,
-              position: "absolute",
-              top: -10,
-              right: -2,
-              borderRadius: 100,
-              height: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#fffffffb",
-              elevation: 5
-            }}
-          >
-            <Image
-              source={require("../../../assets/timer-check.png")}
-              style={styles.cardButton}
-            />
+  // Para actividades por surco (SCO) el avance se guarda en el schema "Surco"
+  // (por surco) y nunca se refleja en ActiviadesPorEmpleado.avances/jornal,
+  // así que lo calculamos sumando los surcos del empleado para esta actividad.
+  const esPorSurco = item.NomCortoUnidad?.trim() === "SCO";
+  const avanceSurcos = esPorSurco && realmInstance
+    ? realmInstance
+        .objects("Surco")
+        .filtered(
+          "codEmpleado == $0 AND lote == $1 AND nave == $2 AND tabla == $3 AND actividad == $4 AND avance == $5 AND fecha >= $6 AND fecha <= $7",
+          item.codigoEmpleado,
+          item.codigoLote,
+          item.codigoNave,
+          item.codigoTabla,
+          item.CodigoActividad,
+          item.CodigoAvance,
+          inicioDiaCuliacan(),
+          finDiaCuliacan()
+        )
+        .reduce((acc, surco) => acc + surco.avanceAcum, 0)
+    : null;
+
+  const avanceMostrado = avanceSurcos !== null ? avanceSurcos : item.avances;
+  const jornalMostrado = avanceSurcos !== null
+    ? (item.Rendimiento ? avanceSurcos / item.Rendimiento : 0)
+    : item.jornal;
+
+  return (
+    <TouchableOpacity style={styles.Card} activeOpacity={0.8} onPress={handleOnPress}>
+      <View style={styles.header}>
+        <View style={[styles.iconCircle, { backgroundColor: colorFondoSuave }]}>
+          <Image
+            source={require("../../../assets/herramientas.png")}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+        </View>
+
+        <View style={styles.textos}>
+          <Text style={styles.tituloTexto} numberOfLines={1}>
+            {item.CodigoActividad}-{String(item.CodigoAvance).trim()} · {item.NomCortoUnidad.trim()}
+          </Text>
+          <Text style={styles.subtexto} numberOfLines={1}>
+            {item.Descripcion.trim()}
+          </Text>
+        </View>
+
+        {/*CANDADITO: bloqueado por tiempo limite */}
+        {bloqueado && (
+          <View style={styles.candadoBadge}>
+            <Ionicons name="lock-closed" size={16} color="#ffffff" />
+          </View>
+        )}
+
+        {/*TIMER INICIAR */}
+        {!bloqueado && puedeIniciar && (
+          <TouchableOpacity style={styles.botonTimer} onPress={handleIniciar}>
+            <Image source={require("../../../assets/timer-play.png")} style={styles.cardButton} />
           </TouchableOpacity>
         )}
 
-      {/*CANDADITO ICONO */}
-      {validarBloquead() &&
-        <View style={{
-           top:-30,
-           width: 60,
-           height: 60,
-           borderRadius: 55,
-           overflow: 'hidden',
-           position:"absolute",
-        }}>
-       {/* Borde bicolor */}
-          <View style={{ flex: 1, backgroundColor: item.estado ===0? "#cdcdcd" : item.estado === 1 ? "#00eade" : "#ff4d4d" }} />
-          <View style={{ flex: 1, backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
-
-        {/* Círculo interior (el "contenido") */}
-         <View style={{
-           position: 'absolute',
-
-           top: 4,
-           left: 4,
-           width: 52,
-           height: 52,
-           borderRadius: 51,
-           overflow: 'hidden',
-         }}>
-           <View style={{ flex: 1,  backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
-           <View style={{ flex: 1, backgroundColor: item.estado ===0? "#e9e8e8" : item.estado === 1 ? "#00c9bf" : "#ff4d4d" }} />
-       
-           {/* Icono centrado */}
-           <View style={{
-             position: 'absolute',
-             top: 0, left: 0, right: 0, bottom: 0,
-             justifyContent: 'center',
-             alignItems: 'center',
-           }}>
-             <Ionicons name="lock-closed" size={iconSize} color="#000000" />
-           </View>
-         </View>
-        </View>
-      
-      }
-     
-      <View style={styles.imageContainer}>
-        <Text
-          style={{
-            fontSize: 15,
-            textAlign: "left",
-            marginBottom: 3
-          }}
-        >
-          {item.NomCortoUnidad.trim()}
-        </Text>
-
-        <Image
-          source={require("../../../assets/herramientas.png")}
-          style={styles.icon}
-          resizeMode="contain"
-        />
+        {/*TIMER FINALIZAR */}
+        {!bloqueado && puedeFinalizar && (
+          <TouchableOpacity style={styles.botonTimer} onPress={handleFinalzar}>
+            <Image source={require("../../../assets/timer-check.png")} style={styles.cardButton} />
+          </TouchableOpacity>
+        )}
       </View>
-      <Text style={{ fontWeight: "bold", fontSize: 12 }}>
-        {item.CodigoActividad}-{String(item.CodigoAvance).trim()}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "center", margin: "auto" }}>
-        {item.Descripcion.trim()}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Rend. tope: {item.RendimientoTope}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Lote: {item.codigoLote}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Nave: {item.codigoNave}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Tabla: {item.codigoTabla}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Jornal:{item.jornal.toFixed(2)}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Avances: {item.avances.toFixed(2)}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Fecha captura: {obtenerFechaYHora(item.fecha)}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" }}>
-        Hora inicio:{" "}
-        {item.horaInicioActividad === null
-          ? "Sin asignar"
-          : convertir(item.horaInicioActividad)}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto", color: "black" }}>
-        Hora fin:{" "}
-        {item.horaFinalActividad === null
-          ? "sin asignar"
-          : convertir(item.horaFinalActividad)}
-      </Text>
-      <Text style={{ fontSize: 10, textAlign: "left", margin: "auto" , color: validarBloquead() ? "red" : "black" }}>
-        Hora limite:{" "}
-        {item.limiteMaximoDeCaptura !== null
-          ? convertir(item.limiteMaximoDeCaptura)
-          : "sin asignar"}
-      </Text>
+
+      <View style={styles.filaMeta}>
+        <View style={[styles.badge, { backgroundColor: colorFondoSuave }]}>
+          <View style={[styles.badgeDot, { backgroundColor: colorAcento }]} />
+          <Text style={[styles.badgeTexto, { color: colorAcento }]}>{etiquetaEstado}</Text>
+        </View>
+        <Text style={styles.ubicacionTexto}>
+          Lote {item.codigoLote} · Nave {item.codigoNave} · Tabla {item.codigoTabla}
+        </Text>
+      </View>
+
+      <View style={styles.separador} />
+
+      <View style={styles.metricasFila}>
+        <View style={styles.metrica}>
+          <Text style={styles.metricaLabel}>Rend. tope</Text>
+          <Text style={styles.metricaValor}>{item.RendimientoTope}</Text>
+        </View>
+        <View style={styles.metrica}>
+          <Text style={styles.metricaLabel}>Jornal</Text>
+          <Text style={styles.metricaValor}>{jornalMostrado.toFixed(2)}</Text>
+        </View>
+        <View style={styles.metrica}>
+          <Text style={styles.metricaLabel}>Avances</Text>
+          <Text style={styles.metricaValor}>{avanceMostrado.toFixed(2)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.tiemposFila}>
+        <View style={styles.tiempoItem}>
+          <Text style={styles.detalleLabel}>Captura</Text>
+          <Text style={styles.detalleValor}>{obtenerFechaYHora(item.fecha)}</Text>
+        </View>
+        <View style={styles.tiempoItem}>
+          <Text style={styles.detalleLabel}>Inicio</Text>
+          <Text style={styles.detalleValor}>
+            {item.horaInicioActividad === null ? "Sin asignar" : convertir(item.horaInicioActividad)}
+          </Text>
+        </View>
+        <View style={styles.tiempoItem}>
+          <Text style={styles.detalleLabel}>Fin</Text>
+          <Text style={styles.detalleValor}>
+            {item.horaFinalActividad === null ? "Sin asignar" : convertir(item.horaFinalActividad)}
+          </Text>
+        </View>
+        <View style={styles.tiempoItem}>
+          <Text style={styles.detalleLabel}>Límite</Text>
+          <Text style={[styles.detalleValor, bloqueado && styles.detalleValorAlerta]}>
+            {item.limiteMaximoDeCaptura !== null ? convertir(item.limiteMaximoDeCaptura) : "Sin asignar"}
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   Card: {
-    
-    margin: ITEM_MARGIN,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
-    alignItems: "center",
-    elevation: 3,
-    borderWidth:3
-  },
-  imageContainer: {
     width: "100%",
-    aspectRatio: 1,
-    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 10,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8
+  },
+  header: {
+    flexDirection: "row",
     alignItems: "center"
   },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12
+  },
   icon: {
-    width: "40%",
-    height: "40%"
+    width: "50%",
+    height: "50%"
+  },
+  textos: {
+    flex: 1
+  },
+  tituloTexto: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#111827"
+  },
+  subtexto: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2
+  },
+  candadoBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(17,24,39,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8
+  },
+  botonTimer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8
   },
   cardButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 5
+    width: 20,
+    height: 20
+  },
+  filaMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    flexWrap: "wrap",
+    gap: 8
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    gap: 5
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3
+  },
+  badgeTexto: {
+    fontSize: 10,
+    fontWeight: "700"
+  },
+  ubicacionTexto: {
+    fontSize: 11,
+    color: "#6b7280"
+  },
+  separador: {
+    height: 1,
+    backgroundColor: "#f3f4f6",
+    marginVertical: 10
+  },
+  metricasFila: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  metrica: {
+    alignItems: "center",
+    flex: 1
+  },
+  metricaLabel: {
+    fontSize: 10,
+    color: "#9ca3af"
+  },
+  metricaValor: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+    marginTop: 2
+  },
+  tiemposFila: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 8
+  },
+  tiempoItem: {
+    width: "47%"
+  },
+  detalleLabel: {
+    fontSize: 10,
+    color: "#9ca3af"
+  },
+  detalleValor: {
+    fontSize: 11,
+    color: "#111827",
+    fontWeight: "600",
+    marginTop: 1
+  },
+  detalleValorAlerta: {
+    color: "#dc2626"
   }
 });

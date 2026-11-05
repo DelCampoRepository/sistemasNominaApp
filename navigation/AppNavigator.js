@@ -13,6 +13,8 @@ import ListaEmpleados from '../screens/ListaEmpleados';
 import PantallaTablaDatos from '../screens/PantallaTablaDatos';
 import LoadingScreen from '../screens/LoadingScreen';
 import ReporteEmpleadosScreen from '../screens/ReporteEmpleadosScreen';
+import ConfiguracionScreen from '../screens/ConfiguracionScreen';
+import CrearPatronScreen from '../screens/CrearPatronScreen';
 import { View,Text } from 'react-native';
 import {  useWindowDimensions } from 'react-native';
 const Stack = createNativeStackNavigator();
@@ -28,6 +30,9 @@ export default function AppNavigator() {
         <Stack.Navigator initialRouteName="Login">
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio', headerShown:false }} />
+
+            <Stack.Screen name="Configuracion" component={ConfiguracionScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CrearPatron" component={CrearPatronScreen} options={{ headerShown: false }} />
            
             <Stack.Screen name="Reportes" component={ReportesScreen}options={{headerShown: false, headerTitle: 'Reportes', headerTitleAlign: 'center'}} />
           

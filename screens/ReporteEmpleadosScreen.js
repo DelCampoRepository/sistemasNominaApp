@@ -1,17 +1,18 @@
-import { StyleSheet, View, Text, Image, TouchableOpacity,ScrollView } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, StatusBar, Platform, useWindowDimensions } from "react-native";
 import React, { useState, useEffect } from "react";
 import { getRealmInstance } from "../realm";
-import {  useWindowDimensions } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
 import { Modal } from "react-native-paper";
 import { FlatList } from "react-native-gesture-handler";
 import CustomOptions from "../src/components/CustomOptions";
-import CustomTitle from "../src/components/CustomTitle";
+import EmpleadoReporteCard from "../src/components/Cards/EmpleadoReporteCard";
+import DetalleActividadEmpleadoCard from "../src/components/Cards/DetalleActividadEmpleadoCard";
 export default function ReporteEmpleadosScreen({ route }) {
+  const { height: screenHeight } = useWindowDimensions();
   const [realmInstance, setRealmInstance] = useState(null);
   const [listaEmpleados, setListaEmpleados] = useState([]);
   const [ListaFinalEmp, setListaFinalEmp] = useState([]);
   const [actividadesPorEmp, setActividadesPorEmp] = useState([]);
-   const { width, height } = useWindowDimensions();
   const [actividades, setActividades] = useState([]);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
   const {
@@ -119,7 +120,7 @@ const buscarActividadesEmpleado = (item) =>{
         const finDia = new Date(fechaFin);
            finDia.setHours(23, 59, 59, 999);
            // console.log(fechaFin, fechaIni)
-        const listaEmpleados = realmInstance
+        const listaEmpleadosRealm = realmInstance
         .objects("EmpleadoCapturado")
         .filtered(
           "CodigoLote == $0 AND CodigoNave == $1 AND CodTabla == $2 AND  CodigoEmpleado ==$3 AND FechaCaptura >= $4 AND FechaCaptura <=$5",
@@ -130,7 +131,10 @@ const buscarActividadesEmpleado = (item) =>{
           inicioDia,
           finDia
         )
-        
+
+        // Convertimos a plano (los objetos "vivos" de Realm no se copian bien con spread)
+        const listaEmpleados = JSON.parse(JSON.stringify(listaEmpleadosRealm));
+
           if (actividades.length > 0 && listaEmpleados.length > 0) {
         const empleadosFinal = listaEmpleados.map(emp => {
           const actividad = actividades.find(
@@ -163,287 +167,79 @@ const formatFecha =(fecha) =>{
 
   
 
-const renderIntem = ({ item }) => (
-  <View
-    style={{ 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: 25, 
-      width: 25,
-      backgroundColor: '#B3E0B3', 
-      borderRadius: 12.5,
-      marginHorizontal: 2, 
-      marginVertical: 2,
-    
-      borderWidth: 0.01
-    }}
-  >
-    <Text style={{ fontWeight: 'bold' }}>
-      {item}
-    </Text>
-  </View>
-);
-
-
   return (
     <View style={styles.container}>
-       <CustomTitle title="- Reporte por empleados -" />
-      <View style={styles.infoSuperior}>
-        <Text style={styles.infoText}>
-          {codigoLote} - {Descripcion}
+      <StatusBar barStyle="light-content" backgroundColor="#16a34a" />
+      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 18 : 18 }]}>
+        <Text style={styles.headerTexto}>Reporte por empleados</Text>
+        <Text style={styles.headerSubtexto} numberOfLines={2}>
+          Lote {codigoLote}-{Descripcion} · Nave {nave}-{nombreNave} · {descripcionTabla}
         </Text>
-        <Text style={styles.infoText}>
-          {nave} - {nombreNave}
-        </Text>
-        <Text style={styles.infoText}>
-          {descripcionTabla}
-        </Text>
-        <Text style={styles.infoText}>
-          Fecha Inicial: {formatFecha(fechaIni)}
-        </Text>
-        <Text style={styles.infoText}>
-          Fecha Final: {formatFecha(fechaFin)}
-        </Text>
-       
-      
       </View>
-      <View style={{ width: "100%",height:"70%"}}>
-        <View
-          style={{
-             height:"100%",
-            display: "flex",
-            width: "100%",
-            alignItems: "center",
-            zIndex: -1,
-           
-          }}
-        >
-         <ScrollView style={{width:"100%"}} contentContainerStyle={{alignItems:"center", paddingBottom: 50}}>
-           {ListaFinalEmp &&
-            ListaFinalEmp.map(empleado =>
-              <TouchableOpacity
+
+      <View style={styles.resumenCard}>
+        <Ionicons name="calendar-outline" size={16} color="#16a34a" style={{ marginRight: 8 }} />
+        <Text style={styles.resumenTexto}>
+          {formatFecha(fechaIni)} - {formatFecha(fechaFin)}
+        </Text>
+      </View>
+
+      <View style={styles.listaContenedor}>
+        <ScrollView style={{ width: "100%" }} contentContainerStyle={styles.listaContenido}>
+          {ListaFinalEmp && ListaFinalEmp.length > 0 ? (
+            ListaFinalEmp.map(empleado => (
+              <EmpleadoReporteCard
                 key={`${empleado.CodigoActividad}-${empleado.CodigoAvance}-${empleado.CodigoEmpleado}`}
-                style={{
-                  height: 75,
-                  backgroundColor: "white",
-                  marginTop: 10,
-                  display: "flex",
-                  flexDirection: "row",
-                  borderWidth: 0.5,
-                  borderRadius: 10,
-                  elevation:isMenuVisible?0: 5,
-                  width: "94%",
-                  
-                }}
-                onPress={ ()=> buscarActividadesEmpleado(empleado)}
-              >
-                <View
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    marginRight: 20,
-                    marginLeft: 8
-                  }}
-                >
-                  <Image
-                    source={require("../assets/usuario2.png")}
-                    style={styles.avatar}
-                  />
-                </View>
-                <View
-                  style={{
-                    display: "flex",
-                    justifyContent: "center"
-                  }}
-                >
-                  <View
-                    style={{
-                      display: "flex",
-                      
-                    }}
-                  >
-               
-               
-                     <View>
-                    <Text style={{ fontWeight: "bold" }}>
-                      {empleado.CodigoEmpleado}
-                    </Text>
-                  </View>
-                  </View>
-                  <Text>
-                    {empleado.Nombre}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-         </ScrollView>
-        </View>
-           
+                empleado={empleado}
+                onPress={() => buscarActividadesEmpleado(empleado)}
+              />
+            ))
+          ) : (
+            <View style={styles.vacio}>
+              <View style={styles.vacioIconCircle}>
+                <Ionicons name="people-outline" size={30} color="#9ca3af" />
+              </View>
+              <Text style={styles.vacioTitulo}>Sin empleados para mostrar</Text>
+            </View>
+          )}
+        </ScrollView>
       </View>
-      <Modal visible={isMenuVisible}>
-        <View style={{
-           width:'100%',
-          
-                        height:'100%',
-            backgroundColor: "#00000099",
-            justifyContent: "center",  
-             backgroundColor:"gree",         
-            alignItems: "center"}}>
-                    <View  style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 10, 
-                        width:'90%',
-                        height:'50%',
-                        alignItems: "center"
-                    }}>
-                           <TouchableOpacity
-                                            style={styles.cerrarIcono}
-                                            onPress={() => {
-                                              setIsMenuVisible(false);
-                                            }}
-                                          >
-                                            <Image
-                                              source={require("../assets/cerraar.png")}
-                                              style={{ width: 30, height: 30 }}
-                                              resizeMode="contain"
-                                            />
-                                          </TouchableOpacity>
-                       <View style={{marginTop:40}} >
-                      {actividadesPorEmp.length > 0 &&
-                         <View style={{backgroundColor:"#ffffffff", width:"100%", marginTop:10, marginBottom:10, display:'flex', alignItems:'center'}}>
-                              <Text style={{fontWeight:'bold'}}>   {actividadesPorEmp[0].CodigoEmpleado}    </Text>
-                             <Text style={{fontWeight:'bold'}}>   {actividadesPorEmp[0].Nombre}    </Text>
-                         </View>
-                      }
-                       </View>
-                     <View style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 10, 
-                        width:'100%',
-                        height:'100%',
-                  
-                    }}>
-                          <FlatList
-                  data={actividadesPorEmp}
-                  keyExtractor={(item, index) =>
-                    `${item.CodigoActividad}-${item.CodigoAvance}-${index}`
-                  }
-                  renderItem={({ item }) => (
-                    <View style={{ marginVertical: 10 }}>
-                        <View style={{   
-                          backgroundColor: 
-                          item.estado > 0 
-                          ?  item.estado === 1
-                          ? "#aeccffff" :"#e9a7a7ff"  :"#B3E0B3", 
-                          width:"90%", 
-                          display:'flex', 
-                          alignItems:"flex-start", 
-                          justifyContent:'flex-start', 
-                          marginLeft:20, 
-                          borderRadius:5, 
-                          paddingVertical:5, 
-                          elevation:3}}>
-                        <Text style={{marginLeft:10, fontWeight: 'bold' }}>
-                            {item.CodigoActividad} - {item.CodigoAvance} {item.Descripcion}
-                        </Text>
-                    </View>
-                     
-                  
-                     <View style={{
-                    width:"100%", 
-                    display:'flex', 
-                    alignItems:"flex-start",
-                     justifyContent:'flex-start', 
-                     marginLeft:20}}>
-                       <View style={{
-                        backgroundColor:"#f0fff0", 
-                        width:"90%", 
-                        height:30, 
-                        marginVertical:5, 
-                        marginTop:5, 
-                        display:'flex', 
-                        justifyContent:'center', 
-                        borderRadius:10 , 
-                        elevation:3}}>
-                          <Text  style={{fontWeight:'bold', marginLeft:10}}>Fecha: {formatFecha(item.FechaCaptura.toISOString())}</Text>
-                       </View>
-                       <View style={{
-                            backgroundColor:"#f0fff0", 
-                            width:"90%", 
-                            height:30,
-                            marginVertical:5,
-                            marginTop:5, 
-                            display:'flex', 
-                            justifyContent:'center', 
-                            borderRadius:10 , 
-                            elevation:3
-                            }}>  
-                              <Text   style={{
-                                fontWeight:'bold', 
-                                marginLeft:10}}>
-                                  Avance: {item.Avances.toFixed(2)}
-                              </Text>
-                            </View>
 
-                             <View style={{
-                                backgroundColor:"#f0fff0", 
-                                width:"90%",
-                                 height:30,
-                                  marginVertical:5,
-                                   display:'flex',
-                                    justifyContent:'center',
-                                     borderRadius:10,
-                                      elevation:3}}> 
-                            <Text style={{fontWeight:'bold'}} >{" "} Jrn: {(item.Avances/item.Rendimiento).toFixed(2)} </Text>
-                             </View> 
-                             <View style={{
-                        backgroundColor:"#f0fff0",
-                         width:"90%", 
-                         height:30, 
-                         marginVertical:5,
-                          display:'flex',
-                           justifyContent:'center', 
-                           borderRadius:10, 
-                           elevation:3}}
-                    > 
-                     
-                   <Text style={{fontWeight:'bold', marginLeft:10}}>Unindad:{item.codUnidad}</Text>
-                   
-                   </View>
+      <Modal
+        visible={isMenuVisible}
+        onDismiss={() => setIsMenuVisible(false)}
+        contentContainerStyle={[styles.modalContenido, { height: screenHeight * 0.75 }]}
+      >
+        <TouchableOpacity
+          style={styles.cerrarIcono}
+          onPress={() => setIsMenuVisible(false)}
+        >
+          <Ionicons name="close" size={20} color="#6b7280" />
+        </TouchableOpacity>
 
+        {actividadesPorEmp.length > 0 && (
+          <View style={styles.modalHeaderEmpleado}>
+            <View style={styles.modalIconCircle}>
+              <Ionicons name="person" size={22} color="#16a34a" />
+            </View>
+            <Text style={styles.modalCodigoEmpleado}>{actividadesPorEmp[0].CodigoEmpleado}</Text>
+            <Text style={styles.modalNombreEmpleado}>{actividadesPorEmp[0].Nombre}</Text>
+          </View>
+        )}
 
-                           {item.surcos.length > 0 &&
-                              <View style={{
-                                  backgroundColor:"#f0fff0", 
-                                  width:"90%", 
-                                  height:89, 
-                                  marginVertical:5, 
-                                  display:'flex', 
-                                  justifyContent:'center', 
-                                  alignItems:'center', 
-                                  borderRadius:10, 
-                                  elevation:3, 
-                                  flexDirection:"row"
-                        }}>
-                          <Text style={{ marginLeft:10, fontWeight:'bold' }}> Surcos: </Text>
-                            <FlatList
-                                          data={item.surcos}
-                                          renderItem={renderIntem}
-                                          keyExtractor={(item, index) => index.toString()}
-                                          numColumns={8}
-                                          contentContainerStyle={styles.lista}/>
-                          </View>
-                           }
-                     </View>
-                      </View>
-                          )}
-                        />
-                          </View>
-                        </View>
-                      </View>
-                      </Modal>
-       <CustomOptions visible={false}/>
-      </View>
+        <FlatList
+          style={{ width: "100%", flex: 1 }}
+          data={actividadesPorEmp}
+          keyExtractor={(item, index) => `${item.CodigoActividad}-${item.CodigoAvance}-${index}`}
+          renderItem={({ item }) => (
+            <DetalleActividadEmpleadoCard item={item} formatFecha={formatFecha} realmInstance={realmInstance} />
+          )}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      </Modal>
+
+      <CustomOptions visible={false} />
+    </View>
   );
 }
 
@@ -451,355 +247,122 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f0fff0",
-    padding: 3,
-    zIndex: -2,
-      alignItems: "center",
-  },
-
-  botonContainer: { marginTop: 10 },
-
-  infoSuperior: {
-    width: "100%",
-    padding: 10,
-    backgroundColor: "#B3E0B3",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    height: "16%",
-    
-  },
-  infoText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 3,
-    color: "#333",
-    marginRight: 50
-  },
-  rendimiento2: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 3,
-    color: "#333",
-    marginRight: 50,
-   
-  },
-  unidad: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 2,
-    color: "#333",
-    marginRight: 50,
-    marginTop: 1
-  },
-  fecha: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 3,
-    color: "#333",
-    marginRight: 3
-  },
-  rowInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 5
-  },
-  lista: {
-    paddingBottom: 100,
-    justifyContent: "center",
-
-    width: "100%",
-    display: "flex"
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 10,
-    margin: 7,
-    width: "42%",
-    height: 215,
-    marginTop: 18,
-    left: 15,
-
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-
-    position: "relative"
-  },
-
-  avatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 20,
-    marginBottom: 5
-  },
-  cardButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 5
-  },
-  codigo: {
-    fontWeight: "bold",
-    fontSize: 16,
-    marginBottom: 2
-  },
-  nombre: {
-    textAlign: "center",
-    fontSize: 14,
-    marginBottom: 10,
-    paddingTop: -2,
-    textTransform: "capitalize",
-    color: "#666",
-    fontWeight: "bold"
-  },
-  surc: {
-    fontSize: 12,
-    marginBottom: 5,
-    fontWeight: "bold"
-  },
-  avanceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 5
-  },
-  avanceLabel: {
-    color: "green",
-    fontSize: 12,
-    fontWeight: "bold"
-  },
-  avanceBox: {
-    backgroundColor: "green",
-    paddingHorizontal: 6,
-    borderRadius: 3,
-    marginLeft: 6
-  },
-  avanceText: {
-    color: "white",
-    fontWeight: "bold"
-  },
-  botonAgregar: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    backgroundColor: "green",
-    borderRadius: 40,
-    width: 66,
-    height: 66,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#00000099",
-    justifyContent: "center",
     alignItems: "center"
   },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    width: "80%",
-    alignItems: "center"
-  },
-  cerrar: {
-    position: "absolute",
-    top: 10,
-    right: 10
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 20
-  },
-  label: {
-    alignSelf: "flex-start",
-    fontWeight: "bold",
-    marginTop: 7,
-    fontSize: 14
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#999",
-    width: "100%",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 5
-  },
-  nombreBloqueado: {
-    backgroundColor: "#ddd"
-  },
-  botonBuscar: {
-    backgroundColor: "green",
-    marginTop: 15,
-    paddingVertical: 7,
-    borderRadius: 5,
-    alignItems: "center",
+  header: {
+    backgroundColor: "#16a34a",
+    paddingHorizontal: 22,
+    paddingBottom: 26,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     width: "100%"
   },
-  botonTexto: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 13
+  headerTexto: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold"
   },
-  botonModal: {
-    backgroundColor: "green",
-    marginTop: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+  headerSubtexto: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 12,
+    marginTop: 4
+  },
+  resumenCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    width: "92%",
+    marginTop: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 16
+  },
+  resumenTexto: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151"
+  },
+  listaContenedor: {
+    flex: 1,
     width: "100%",
-    alignItems: "center"
+    alignItems: "center",
+    marginTop: 8
   },
-  nuevoModalContent: {
+  listaContenido: {
+    alignItems: "center",
+    paddingBottom: 100
+  },
+  vacio: {
+    alignItems: "center",
+    paddingHorizontal: 30,
+    marginTop: 40
+  },
+  vacioIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10
+  },
+  vacioTitulo: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151"
+  },
+  modalContenido: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    width: "90%",
-    alignItems: "center"
+    borderRadius: 24,
+    width: "92%",
+    alignSelf: "center",
+    alignItems: "center",
+    paddingTop: 20,
+    paddingBottom: 10,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12
   },
   cerrarIcono: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    top: 14,
+    right: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1
   },
-  filaCodigoBuscar: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    width: "100%",
-    gap: 11,
+  modalHeaderEmpleado: {
+    alignItems: "center",
+    marginBottom: 12
+  },
+  modalIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#dcfce7",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8
   },
-  filaSurcoAvance: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    width: "100%",
-    gap: 10,
-    marginTop: 15
-  },
-  boxInputChico: {
-    flex: 1
-  },
-  botonAgregarMini: {
-    backgroundColor: "green",
-    paddingVertical: 7,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "flex-end"
-  },
-  zonaGrisPreview: {
-    backgroundColor: "#ccc",
-    height: 145,
-    width: "100%",
-    marginTop: 20,
-    borderRadius: 10
-  },
-  flatlistContent: {
-    flexGrow: 1,
-    justifyContent: "flex-start"
-  },
-  botonAceptar: {
-    backgroundColor: "green",
-    marginTop: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "100%"
-  },
-  botonBuscar: {
-    backgroundColor: "green",
-    paddingVertical: 6.5,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  itemPreview: {
-    backgroundColor: "white",
-    margin: 7,
-    padding: 2,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 60,
-    height: 50,
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "green",
-    position: "relative"
-  },
-  itemPreviewSelected: {
-    backgroundColor: "green",
-    margin: 7,
-    padding: 2,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 60,
-    height: 50,
-    display: "flex",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    position: "relative"
-  },
-  surcoPreview: {
-    fontSize: 13.5,
-    color: "#666",
+  modalCodigoEmpleado: {
     fontWeight: "bold",
-    textAlign: "center"
+    fontSize: 15,
+    color: "#111827"
   },
-  surcoPreviewSelected: {
-    fontSize: 13.5,
-    color: "#ffffffff",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  surcoPreviewBlock: {
-    fontSize: 13.5,
-    color: "#ffffffff",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  itemPreviewBlock: {
-    backgroundColor: "gray",
-    margin: 7,
-    padding: 2,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 60,
-    height: 50,
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    position: "relative"
-  },
-  avancePreview: {
-    fontSize: 12,
-    color: "green",
-    textAlign: "center",
-    marginTop: 2,
-    fontWeight: "bold"
-  },
-  eliminarBoton: {
-    position: "absolute",
-    top: -10,
-    right: -10,
-    zIndex: 1
-  },
-  loadingOverlay: {
-    flex: 1, // 👈 Importante: Esto hace que ocupe todo el espacio vertical disponible
-    justifyContent: "center", // 👈 Centra el contenido (ActivityIndicator) verticalmente
-    alignItems: "center" // 👈 Centra el contenido horizontalmente
+  modalNombreEmpleado: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginTop: 2
   }
 });

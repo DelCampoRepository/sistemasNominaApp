@@ -5,9 +5,10 @@ import { ObtenerNavesPorUsuario } from "../services/ObtenerNavesService";
 export async  function syncNaves( realmInstance,codigo, temporada, token){
 
  try{
-
+           console.log("asdasd",codigo,temporada)
+ 
     const datosRespuesta = await ObtenerNavesPorUsuario(codigo, temporada,token);
-   
+  // console.log(JSON.stringify(datosRespuesta))
     
     if(datosRespuesta && datosRespuesta.estado !== 1)
     {
@@ -20,11 +21,9 @@ export async  function syncNaves( realmInstance,codigo, temporada, token){
     return resultado;
  }
  catch (error) {
-    console.log(error);
-   
-    return false;
+    throw error;
  }
-        
+
 }
 
 async function guardarNavesEnRealm(realmInstance, data) {

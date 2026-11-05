@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, FlatList, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import ActividadEmpleadoCard from "../Cards/ActividadEmpleadoCard";
 import { getRealmInstance } from "../../../realm";
-import { Dimensions } from "react-native";
-import {  useWindowDimensions } from 'react-native';
 import { finDiaCuliacan, inicioDiaCuliacan } from "../../../utils/obtenerHoraCuliacan";
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const ITEM_MARGIN = 0;
 
 export default function ListaActividadesAgregadasEmpleado({
   setModales,
@@ -15,9 +12,6 @@ export default function ListaActividadesAgregadasEmpleado({
   setDatosActividad,
   datosActividad
 }) {
-  //console.log('datosss',datosEmpleadoSeleccionado)
-  
-     const { width } = useWindowDimensions();
   const [realmInstance, setRealmInstance] = useState(null);
   const [activiades, setActiviades] = useState([]);
   useEffect(() => {
@@ -52,36 +46,37 @@ export default function ListaActividadesAgregadasEmpleado({
   }, [realmInstance]);
 //console.log(JSON.stringify(activiades,null,2));
   return (
-    <View style={{ flex: 1, borderRadius: 10 }}>
-      <View style={styles.headerContainer}>
-        <Text style={[styles.headerText,{fontSize: width > 600 ? 18 : 14}]}>ACTIVIDADES DEL EMPLEADO</Text>
-      </View>
+    <View style={{ height: "92%", width: "100%", borderRadius: 10 }}>
       <View style={styles.container}>
-        {activiades.length > 0 && (
-          <FlatList
-            data={activiades}
-            keyExtractor={(item) =>
-              `${item.CodigoActividad}-${item.CodigoAvance}-${item.codigoLote}-${item.codigoNave}-${item.codigoTabla}`
-            }
-            renderItem={({ item }) => (
-              <ActividadEmpleadoCard
-                item={item}
-                setModales={setModales}
-                modales={modales}
-                setDatosActividad={setDatosActividad}
-                datosActividad={datosActividad}
-                realmInstance={realmInstance}
-              />
-            )}
-            numColumns={width > 400 ? 3 : 2}
-            showsVerticalScrollIndicator={true}
-            columnWrapperStyle={{
-              margin: "auto",
-              marginTop: 40,
-              paddingHorizontal: ITEM_MARGIN
-            }}
-          />
-        )}
+        <FlatList
+          data={activiades}
+          keyExtractor={(item) =>
+            `${item.CodigoActividad}-${item.CodigoAvance}-${item.codigoLote}-${item.codigoNave}-${item.codigoTabla}`
+          }
+          renderItem={({ item }) => (
+            <ActividadEmpleadoCard
+              item={item}
+              setModales={setModales}
+              modales={modales}
+              setDatosActividad={setDatosActividad}
+              datosActividad={datosActividad}
+              realmInstance={realmInstance}
+            />
+          )}
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={activiades.length === 0 && styles.vacioContenedor}
+          ListEmptyComponent={
+            <View style={styles.vacio}>
+              <View style={styles.vacioIconCircle}>
+                <Ionicons name="clipboard-outline" size={30} color="#9ca3af" />
+              </View>
+              <Text style={styles.vacioTitulo}>Sin actividades agregadas</Text>
+              <Text style={styles.vacioTexto}>
+                Toca el botón "+" para agregarle una actividad a este empleado.
+              </Text>
+            </View>
+          }
+        />
       </View>
     </View>
   );
@@ -89,22 +84,37 @@ export default function ListaActividadesAgregadasEmpleado({
 
 const styles = StyleSheet.create({
   container: {
-    height: "95%",
-    backgroundColor: "#f0fff0",
-    borderWidth: 0.4,
-    borderColor: "#1fcb30",
-    borderRadius: 10
+    height: "100%",
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    padding: 8
   },
-  headerContainer: {
-    height: "5%",
-    backgroundColor: "white",
+  vacioContenedor: {
+    flexGrow: 1,
+    justifyContent: "center"
+  },
+  vacio: {
+    alignItems: "center",
+    paddingHorizontal: 30
+  },
+  vacioIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10
   },
-  headerText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    margin: "auto"
+  vacioTitulo: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151",
+    marginBottom: 4
+  },
+  vacioTexto: {
+    fontSize: 11,
+    color: "#9ca3af",
+    textAlign: "center"
   }
 });
-
-<FlatList />;

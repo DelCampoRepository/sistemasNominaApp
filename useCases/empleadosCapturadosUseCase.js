@@ -9,7 +9,12 @@ export async function syncEmpleadosCapturados(token)
         
         const Empleados = await ObtenerEmpleadosCapturadosRealm();
        await exportarRealmAJSON(realmInstance);
-       console.log(JSON.stringify(Empleados,null,2))
+        console.log("empleadosss")
+
+        if (!Empleados || Empleados.length === 0) {
+          return true;
+        }
+
         const response  = await EnviarEmpleados(Empleados, token);
 
         if (response && response.length > 0) {
